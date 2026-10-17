@@ -33,7 +33,7 @@ export function CreateRecipeModal({ strains, rawMaterials }: CreateRecipeModalPr
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
-  const updateIngredient = (index: number, field: string, val: any) => {
+  const updateIngredient = (index: number, field: string, val: string | number) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: val };
     setIngredients(updated);

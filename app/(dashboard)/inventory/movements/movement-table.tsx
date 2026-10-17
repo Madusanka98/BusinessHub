@@ -14,8 +14,8 @@ import {
 interface MovementItem {
   id: string;
   type: StockMovementType;
-  quantity: string | number | any;
-  balanceAfter: string | number | any;
+  quantity: string | number | { toString(): string };
+  balanceAfter: string | number | { toString(): string };
   referenceId?: string | null;
   notes?: string | null;
   createdAt: Date | string;
@@ -31,7 +31,7 @@ interface ProductOption {
   id: string;
   name: string;
   sku: string;
-  currentStock: string | number | any;
+  currentStock: string | number | { toString(): string };
   unitOfMeasure: string;
 }
 

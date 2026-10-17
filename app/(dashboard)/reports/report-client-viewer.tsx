@@ -17,15 +17,109 @@ import {
   Loader2,
 } from "lucide-react";
 
+interface PnLData {
+  period?: {
+    startDate: Date | null;
+    endDate: Date | null;
+  };
+  summary: {
+    totalRevenue: number;
+    totalCostOfGoodsSold: number;
+    grossProfit: number;
+    totalOperatingExpenses: number;
+    netIncome: number;
+    operatingMarginPercent: number;
+  };
+  revenueByCategory?: Array<{ category: string; amount: number }>;
+  revenueBreakdown?: Array<{ category: string; amount: number }>;
+  expensesByCategory?: Array<{ category: string; amount: number }>;
+  expenseBreakdown?: Array<{ category: string; amount: number }>;
+  transactionCount?: number;
+}
+
+interface SalesData {
+  summary: {
+    totalOrders: number;
+    totalSalesVolume: number;
+    totalCollected: number;
+  };
+  orders: Array<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    orderDate: string | Date;
+    status: string;
+    paymentStatus: string;
+    totalAmount: number;
+    itemCount: number;
+  }>;
+}
+
+interface PurchasesData {
+  summary: {
+    totalPurchases: number;
+    totalPurchasesVolume: number;
+    totalPaid: number;
+  };
+  purchases: Array<{
+    id: string;
+    purchaseNumber: string;
+    supplierName: string;
+    purchaseDate: string | Date;
+    status: string;
+    paymentStatus: string;
+    totalAmount: number;
+    itemCount: number;
+  }>;
+}
+
+interface InventoryData {
+  totalProducts: number;
+  totalStockUnits: number;
+  totalCostValuation: number;
+  totalRetailValuation: number;
+  potentialMargin?: number;
+  lowStockCount: number;
+  items: Array<{
+    id: string;
+    sku: string;
+    name: string;
+    category: string;
+    currentStock: number;
+    unitCost: number;
+    costValuation: number;
+    reorderLevel?: number;
+    isLowStock: boolean;
+  }>;
+}
+
+interface BalancesData {
+  totalReceivables: number;
+  totalPayables: number;
+  netWorkingCapital?: number;
+  customers: Array<{
+    id: string;
+    name: string;
+    outstandingBalance: number;
+    count?: number;
+  }>;
+  suppliers: Array<{
+    id: string;
+    name: string;
+    outstandingBalance: number;
+    count?: number;
+  }>;
+}
+
 interface ReportClientViewerProps {
   currentTab: string;
   fromDate?: string;
   toDate?: string;
-  pnlData?: any;
-  salesData?: any;
-  purchasesData?: any;
-  inventoryData?: any;
-  balancesData?: any;
+  pnlData?: PnLData | null;
+  salesData?: SalesData | null;
+  purchasesData?: PurchasesData | null;
+  inventoryData?: InventoryData | null;
+  balancesData?: BalancesData | null;
 }
 
 export function ReportClientViewer({
@@ -290,7 +384,7 @@ export function ReportClientViewer({
                       {Number(pnlData.summary.totalRevenue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
-                  {pnlData.revenueBreakdown.map((item: any, idx: number) => (
+                  {(pnlData.revenueBreakdown || pnlData.revenueByCategory || []).map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-800/30">
                       <td className="py-2 px-6 text-slate-300">&bull; {item.category}</td>
                       <td className="py-2 px-4 text-right">
@@ -319,7 +413,7 @@ export function ReportClientViewer({
                       ({Number(pnlData.summary.totalOperatingExpenses).toLocaleString(undefined, { minimumFractionDigits: 2 })})
                     </td>
                   </tr>
-                  {pnlData.expenseBreakdown.map((item: any, idx: number) => (
+                  {(pnlData.expenseBreakdown || pnlData.expensesByCategory || []).map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-800/30">
                       <td className="py-2 px-6 text-slate-300">&bull; {item.category}</td>
                       <td className="py-2 px-4 text-right">
@@ -388,7 +482,7 @@ export function ReportClientViewer({
                       </td>
                     </tr>
                   ) : (
-                    salesData.orders.map((o: any) => (
+                    salesData.orders.map((o) => (
                       <tr key={o.id} className="hover:bg-slate-800/30">
                         <td className="py-3 px-4 font-mono font-medium text-emerald-400">{o.orderNumber}</td>
                         <td className="py-3 px-4 font-medium text-white">{o.customerName}</td>
@@ -459,7 +553,7 @@ export function ReportClientViewer({
                       </td>
                     </tr>
                   ) : (
-                    purchasesData.purchases.map((p: any) => (
+                    purchasesData.purchases.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-800/30">
                         <td className="py-3 px-4 font-mono font-medium text-amber-400">{p.purchaseNumber}</td>
                         <td className="py-3 px-4 font-medium text-white">{p.supplierName}</td>
@@ -529,8 +623,8 @@ export function ReportClientViewer({
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 text-slate-200">
                   {inventoryData.items
-                    .filter((item: any) => (activeTab === "low_stock" ? item.isLowStock : true))
-                    .map((item: any) => (
+                    .filter((item) => (activeTab === "low_stock" ? item.isLowStock : true))
+                    .map((item) => (
                       <tr key={item.id} className="hover:bg-slate-800/30">
                         <td className="py-3 px-4 font-mono font-medium text-slate-300">{item.sku}</td>
                         <td className="py-3 px-4 font-semibold text-white">{item.name}</td>
@@ -546,7 +640,7 @@ export function ReportClientViewer({
                           {item.isLowStock ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                               <AlertTriangle className="w-3 h-3" />
-                              Low Stock ({item.currentStock} &le; {item.reorderLevel})
+                              Low Stock ({item.currentStock} &le; {item.reorderLevel ?? "min"})
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -604,7 +698,7 @@ export function ReportClientViewer({
                       </td>
                     </tr>
                   ) : (
-                    balancesData.customers.map((c: any) => (
+                    balancesData.customers.map((c) => (
                       <tr key={c.id}>
                         <td className="py-2.5 px-4 font-medium text-white">{c.name}</td>
                         <td className="py-2.5 px-4 text-right font-semibold text-emerald-400">
@@ -637,7 +731,7 @@ export function ReportClientViewer({
                       </td>
                     </tr>
                   ) : (
-                    balancesData.suppliers.map((s: any) => (
+                    balancesData.suppliers.map((s) => (
                       <tr key={s.id}>
                         <td className="py-2.5 px-4 font-medium text-white">{s.name}</td>
                         <td className="py-2.5 px-4 text-right font-semibold text-rose-400">

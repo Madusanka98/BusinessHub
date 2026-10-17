@@ -26,10 +26,10 @@ interface ProductItem {
   barcode?: string | null;
   category: ProductCategory;
   unitOfMeasure: UnitOfMeasure;
-  currentStock: string | number | any;
-  unitCost: string | number | any;
-  sellingPrice: string | number | any;
-  reorderThreshold: string | number | any;
+  currentStock: string | number | { toString(): string };
+  unitCost: string | number | { toString(): string };
+  sellingPrice: string | number | { toString(): string };
+  reorderThreshold: string | number | { toString(): string };
   isActive: boolean;
 }
 

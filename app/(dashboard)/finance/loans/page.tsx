@@ -35,7 +35,11 @@ export default async function LoansPage() {
   ]);
 
   const partners = members
-    .filter((m) => ["OWNER", "PARTNER_FINANCE", "PARTNER_OPERATIONS"].includes(m.role) && m.status === "ACTIVE")
+    .filter(
+      (m) =>
+        (m.role === "OWNER" || m.role === "PARTNER_FINANCE" || m.role === "PARTNER_OPERATIONS") &&
+        m.status === "ACTIVE"
+    )
     .map((m) => ({
       membershipId: m.id,
       fullName: m.fullName,

@@ -36,10 +36,10 @@ interface SalesOrder {
   orderDate: Date | string;
   isWalkIn: boolean;
   walkInName?: string | null;
-  subtotal: string | number | any;
-  discountAmount: string | number | any;
-  taxAmount: string | number | any;
-  totalAmount: string | number | any;
+  subtotal: string | number | { toString(): string };
+  discountAmount: string | number | { toString(): string };
+  taxAmount: string | number | { toString(): string };
+  totalAmount: string | number | { toString(): string };
   notes?: string | null;
   customer?: {
     id: string;
@@ -51,9 +51,9 @@ interface SalesOrder {
   items: {
     id: string;
     productId: string;
-    quantity: string | number | any;
-    unitPrice: string | number | any;
-    subtotal: string | number | any;
+    quantity: string | number | { toString(): string };
+    unitPrice: string | number | { toString(): string };
+    subtotal: string | number | { toString(): string };
     product: {
       id: string;
       name: string;
@@ -72,8 +72,8 @@ interface ProductOption {
   id: string;
   name: string;
   sku: string;
-  sellingPrice: string | number | any;
-  currentStock: string | number | any;
+  sellingPrice: string | number | { toString(): string };
+  currentStock: string | number | { toString(): string };
   unitOfMeasure: string;
 }
 

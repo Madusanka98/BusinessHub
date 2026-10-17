@@ -20,8 +20,31 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+interface ScheduledReportRunItem {
+  id: string;
+  status: string;
+  executionDurationMs?: number | null;
+  completedAt?: Date | string | null;
+  errorMessage?: string | null;
+}
+
+interface ScheduledReportItem {
+  id: string;
+  name: string;
+  reportType: string;
+  frequency: string;
+  timeOfDay: string;
+  timezone: string;
+  format: string;
+  isActive: boolean;
+  recipients: string[] | unknown;
+  lastRunAt?: Date | string | null;
+  nextRunAt?: Date | string | null;
+  runs?: ScheduledReportRunItem[];
+}
+
 interface ScheduleManagerClientProps {
-  schedules: any[];
+  schedules: ScheduledReportItem[];
 }
 
 export function ScheduleManagerClient({ schedules }: ScheduleManagerClientProps) {
