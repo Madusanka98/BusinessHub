@@ -130,7 +130,7 @@ export default async function CapitalPage() {
                         {c.notes || "—"}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
-                        +{c.amount.toFixed(2)}
+                        +{Number(c.amount).toFixed(2)}
                       </td>
                     </tr>
                   ))
@@ -209,7 +209,7 @@ export default async function CapitalPage() {
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-amber-400">
-                        -{d.amount.toFixed(2)}
+                        -{Number(d.amount).toFixed(2)}
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         {d.status === "PENDING_APPROVAL" && (

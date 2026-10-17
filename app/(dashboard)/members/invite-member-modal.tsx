@@ -2,7 +2,7 @@
 
 import React, { useActionState, useState } from "react";
 import { inviteMemberAction, ActionResult } from "@/modules/core-tenancy/actions/business.actions";
-import { MembershipRole } from "@prisma/client";
+import type { MembershipRole } from "@prisma/client";
 import { UserPlus, Mail, Shield, Percent, Loader2, X, CheckCircle2 } from "lucide-react";
 
 interface InviteMemberModalProps {

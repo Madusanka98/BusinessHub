@@ -2,9 +2,9 @@
 
 import React, { useState, useTransition } from "react";
 import { saveProfitSharingRuleAction } from "@/modules/finance/actions/finance.actions";
-import { SharingRuleType, LossPolicy } from "@prisma/client";
+import type { SharingRuleType, LossPolicy } from "@prisma/client";
 import { Sliders, Loader2, X, CheckCircle2, AlertTriangle } from "lucide-react";
-import { ActiveRuleAllocation } from "@/modules/finance/services/profitSharing.service";
+import type { ActiveRuleAllocation } from "@/modules/finance/schemas/finance.schema";
 
 interface RuleConfigFormProps {
   currentRule: {

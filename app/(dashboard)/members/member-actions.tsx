@@ -5,7 +5,7 @@ import {
   updateMemberRoleAction,
   removeMemberAction,
 } from "@/modules/core-tenancy/actions/business.actions";
-import { MembershipRole } from "@prisma/client";
+import type { MembershipRole } from "@prisma/client";
 import { Edit2, UserMinus, ShieldAlert, Loader2, X, Check } from "lucide-react";
 
 interface MemberActionsProps {

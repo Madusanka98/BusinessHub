@@ -117,7 +117,7 @@ export default async function LoansPage() {
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-slate-300">
-                        {l.annualInterestRate.toFixed(2)}% APR
+                        {Number(l.annualInterestRate).toFixed(2)}% APR
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -135,11 +135,11 @@ export default async function LoansPage() {
                       </td>
 
                       <td className="py-3.5 px-4 text-right font-mono text-slate-300">
-                        {l.principalAmount.toFixed(2)}
+                        {Number(l.principalAmount).toFixed(2)}
                       </td>
 
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
-                        {l.outstandingBalance.toFixed(2)}
+                        {Number(l.outstandingBalance).toFixed(2)}
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
@@ -147,9 +147,9 @@ export default async function LoansPage() {
                           <RepayLoanModal
                             loan={{
                               id: l.id,
-                              principalAmount: l.principalAmount,
-                              outstandingBalance: l.outstandingBalance,
-                              annualInterestRate: l.annualInterestRate,
+                              principalAmount: l.principalAmount.toString(),
+                              outstandingBalance: l.outstandingBalance.toString(),
+                              annualInterestRate: l.annualInterestRate.toString(),
                               partnerName: l.membership.user.fullName,
                             }}
                           />

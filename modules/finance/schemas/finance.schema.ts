@@ -64,6 +64,15 @@ export const PartnerAllocationItemSchema = z.object({
   weight: z.number().optional(),
 });
 
+export interface ActiveRuleAllocation {
+  membershipId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  percentage: number;
+}
+
+
 export const SaveProfitSharingRuleSchema = z.object({
   name: z.string().min(2, "Rule name is required").max(100),
   ruleType: z.nativeEnum(SharingRuleType),

@@ -152,23 +152,23 @@ export default async function ProfitSharingPage() {
                   <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
                     <div className="text-right">
                       <span className="text-slate-500 text-[10px] block">REVENUE</span>
-                      <span className="text-slate-200 font-semibold">{cp.totalIncome.toFixed(2)}</span>
+                      <span className="text-slate-200 font-semibold">{Number(cp.totalIncome).toFixed(2)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-500 text-[10px] block">EXPENSES</span>
-                      <span className="text-slate-200 font-semibold">{cp.totalExpense.toFixed(2)}</span>
+                      <span className="text-slate-200 font-semibold">{Number(cp.totalExpense).toFixed(2)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-500 text-[10px] block">NET PROFIT</span>
-                      <span className="text-emerald-400 font-bold">{cp.netProfit.toFixed(2)}</span>
+                      <span className="text-emerald-400 font-bold">{Number(cp.netProfit).toFixed(2)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-500 text-[10px] block">RESERVE</span>
-                      <span className="text-purple-400 font-semibold">{cp.retainedReserve.toFixed(2)}</span>
+                      <span className="text-purple-400 font-semibold">{Number(cp.retainedReserve).toFixed(2)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-500 text-[10px] block">DISTRIBUTED</span>
-                      <span className="text-emerald-400 font-bold">{cp.distributedAmount.toFixed(2)}</span>
+                      <span className="text-emerald-400 font-bold">{Number(cp.distributedAmount).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -185,11 +185,11 @@ export default async function ProfitSharingPage() {
                           {d.membership.user.fullName}
                         </p>
                         <p className="text-[10px] text-slate-500">
-                          {d.profitSharePercentage.toFixed(2)}% share
+                          {Number(d.profitSharePercentage).toFixed(2)}% share
                         </p>
                       </div>
                       <div className="text-right font-mono font-bold text-xs text-purple-400">
-                        {d.allocatedAmount.toFixed(2)}
+                        {Number(d.allocatedAmount).toFixed(2)}
                       </div>
                     </div>
                   ))}

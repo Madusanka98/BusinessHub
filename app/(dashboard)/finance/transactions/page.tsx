@@ -202,7 +202,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
                         }`}
                       >
                         {isIncome ? "+" : "-"}
-                        {t.amount.toFixed(2)}
+                        {Number(t.amount).toFixed(2)}
                       </td>
 
                       <td className="py-3 px-4 text-right">

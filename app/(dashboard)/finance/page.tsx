@@ -75,7 +75,7 @@ export default async function FinanceOverviewPage() {
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold text-white font-mono">
-              {summary.totalIncome.toFixed(2)}
+              {Number(summary.totalIncome).toFixed(2)}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
@@ -95,7 +95,7 @@ export default async function FinanceOverviewPage() {
           </div>
           <div className="mt-3">
             <span className="text-2xl font-bold text-white font-mono">
-              {summary.totalExpense.toFixed(2)}
+              {Number(summary.totalExpense).toFixed(2)}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
@@ -119,7 +119,7 @@ export default async function FinanceOverviewPage() {
                 isNetProfitPositive ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {summary.netProfit.toFixed(2)}
+              {Number(summary.netProfit).toFixed(2)}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
@@ -270,7 +270,7 @@ export default async function FinanceOverviewPage() {
                       }`}
                     >
                       {t.type === "INCOME" ? "+" : "-"}
-                      {t.amount.toFixed(2)}
+                      {Number(t.amount).toFixed(2)}
                     </span>
                     <p className="text-[10px] text-slate-500">{new Date(t.transactionDate).toLocaleDateString()}</p>
                   </div>
