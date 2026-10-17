@@ -22,10 +22,12 @@ credentials.json
 
 # Local database dumps and SQLite fallbacks
 *.sql
+!prisma/migrations/**/*.sql
 *.dump
 *.db
 *.sqlite
 *.sqlite3
+*.tsbuildinfo
 
 # Cloudflare Tunnel temporary credentials
 .cloudflared/

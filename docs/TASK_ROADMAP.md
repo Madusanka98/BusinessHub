@@ -63,25 +63,20 @@ graph TD
 
 ---
 
-### Task 3: Database Schema & Migration Foundation
-- **Objective**: Implement Prisma ORM schema for MySQL, seed script, and migration runner.
+### Task 3: Authentication & Access Control
+- **Objective**: Implement secure authentication, password hashing, session management, multi-tenant authorization guards, and cryptographic single-use invitation lifecycle.
 - **Dependencies**: Task 2.
 - **Acceptance Criteria**:
-  - Models created: `User`, `Account`, `Session`, `Business`, `Membership`, `Role`, `InvitationToken`, `AuditLog`.
-  - Extension models created: `MushroomBatch`, `SubstrateMix`, `FruitingChamber`, `HarvestLog`.
-  - Database relations and indexes optimized for tenant-scoped querying (`@@index([businessId])`).
-  - Seed script populating baseline roles, initial test super admin, and test business.
-
----
-
-### Task 4: Secure Authentication & Tenant Session Engine
-- **Objective**: Implement user authentication, password hashing, session management, and active business context switching.
-- **Dependencies**: Task 3.
-- **Acceptance Criteria**:
-  - Secure credential login with bcrypt/argon2 hashing.
-  - Multi-business user context: users can switch between their authorized businesses.
-  - Session contains user identity; active tenant validated server-side on every request.
-  - Expiring, single-use account setup / password creation token verification.
+  - [x] Initial database migration executed against MySQL (`20261017172830_init_auth_and_access_control`).
+  - [x] Password hashing with bcrypt (work factor 12) and password complexity validation (`lib/auth/password.ts`).
+  - [x] 256-bit cryptographic token generation with SHA-256 database storage (`lib/auth/tokens.ts`).
+  - [x] Tamper-proof encrypted JWT session cookies with HttpOnly and SameSite (`lib/auth/session.ts`).
+  - [x] Multi-tenant context extraction and server-side membership verification (`lib/tenant/context.ts`).
+  - [x] Role-permission matrix evaluation and reusable Server Action guards (`lib/tenant/guards.ts`).
+  - [x] Concurrency-safe 1–10 owner quota enforcement with row-locking (`modules/core-tenancy/services/ownerQuota.service.ts`).
+  - [x] Cryptographic single-use invitation onboarding with 48h TTL (`modules/core-tenancy/services/invitation.service.ts`).
+  - [x] Interactive authentication UI (Sign In, Password Recovery, Invitation Acceptance, Tenant Switcher).
+  - [x] 26 automated unit and database integration tests executed and passing (`tests/`).
 
 ---
 
