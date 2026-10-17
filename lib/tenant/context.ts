@@ -96,3 +96,15 @@ export async function getTenantContext(): Promise<TenantContext> {
     isSuperAdmin: user.isSuperAdmin,
   };
 }
+
+/**
+ * Non-throwing variant of getTenantContext. Returns null if unauthenticated or without active business.
+ */
+export async function tryGetTenantContext(): Promise<TenantContext | null> {
+  try {
+    return await getTenantContext();
+  } catch {
+    return null;
+  }
+}
+

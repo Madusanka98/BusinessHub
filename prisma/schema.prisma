@@ -156,6 +156,11 @@ enum MembershipStatus {
 model BusinessSettings {
   id                       String   @id @default(cuid())
   businessId               String   @unique
+  businessType             String?
+  contactEmail             String?
+  contactPhone             String?
+  address                  String?  @db.Text
+  timezone                 String   @default("Asia/Colombo")
   currency                 String   @default("LKR")
   expenseApprovalThreshold Decimal  @default(500.00) @db.Decimal(12, 2)
   defaultReservePercentage Decimal  @default(20.00) @db.Decimal(5, 2)

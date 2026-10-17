@@ -78,11 +78,21 @@ graph TD
   - [x] Interactive authentication UI (Sign In, Password Recovery, Invitation Acceptance, Tenant Switcher).
   - [x] 26 automated unit and database integration tests executed and passing (`tests/`).
 
----
+### Task 4: Core Business & Partner Management
+- **Objective**: Implement business lifecycle, settings management, partner & member role management, last-owner protection, 1-10 owner limit, and tenant activity audit logging.
+- **Dependencies**: Task 3.
+- **Acceptance Criteria**:
+  - [x] Super Admin business tenant provisioning with unique slug generation and initial owner assignment (`modules/core-tenancy/services/business.service.ts`).
+  - [x] Business settings management (currency, timezone, contact info, financial approval thresholds) with migration `20261017174149_add_business_settings_fields`.
+  - [x] Strict 1–10 owner quota enforcement inside database transactions (`assertOwnerQuotaAvailable`).
+  - [x] Minimum 1 active owner protection preventing removal or demotion of last owner (`assertNotLastOwner`).
+  - [x] Partner & staff invitations with role-scoped permission checks and revocation.
+  - [x] Member management: role updates, equity percentage, profit share percentage, and revocation.
+  - [x] Tenant-isolated activity history audit log viewing (`/activity`).
+  - [x] Responsive Next.js App Router UI pages (`/`, `/businesses`, `/businesses/new`, `/settings`, `/members`, `/activity`).
+  - [x] 35 automated tests passing with zero TypeScript errors and successful production build.
 
-### Task 5: Platform Super Admin & Business Provisioning
-- **Objective**: Build platform administration interface for Super Admins to create businesses and assign initial owners.
-- **Dependencies**: Task 4.
+---
 - **Acceptance Criteria**:
   - Super Admin dashboard protected by platform-level authorization guard.
   - Create business form with name, slug, owner limit (1–10), and primary owner email.
