@@ -382,3 +382,27 @@ export async function executeScheduledReport(reportId: string) {
     return { success: false, error: errorMsg };
   }
 }
+
+/**
+ * Sweeps all active scheduled reports that have reached their nextRunAt time,
+ * executing each and updating next scheduled run date.
+ */
+export async function processAllDueReports() {
+  const now = new Date();
+  const dueReports = await prisma.scheduledReport.findMany({
+    where: {
+      isActive: true,
+      nextRunAt: { lte: now },
+    },
+    select: { id: true, name: true, businessId: true },
+  });
+
+  const results = [];
+  for (const report of dueReports) {
+    const res = await executeScheduledReport(report.id);
+    results.push({ reportId: report.id, name: report.name, result: res });
+  }
+
+  return { processedCount: dueReports.length, results };
+}
+

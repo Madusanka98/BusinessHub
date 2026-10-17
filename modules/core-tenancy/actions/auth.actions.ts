@@ -8,6 +8,8 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { assertTenantPermission } from "@/lib/tenant/guards";
 import { redirect } from "next/navigation";
 
+import { checkRateLimit, resetRateLimit } from "@/lib/security/rate-limit";
+
 export interface FormActionState {
   success?: boolean;
   error?: string;
@@ -25,12 +27,21 @@ export async function loginAction(_prevState: FormActionState, formData: FormDat
     return { error: parsed.error.issues[0]?.message || "Invalid input." };
   }
 
+  // Rate-limiting check: max 5 attempts per minute per email
+  const rl = checkRateLimit(`auth:login:${parsed.data.email.toLowerCase()}`, { limit: 5, windowMs: 60 * 1000 });
+  if (!rl.success) {
+    return { error: "Too many login attempts. Please wait 1 minute before trying again." };
+  }
+
   const result = await loginUser(parsed.data.email, parsed.data.password);
   if (!result.success) {
     return { error: result.error || "Login failed." };
   }
 
-  redirect("/dashboard");
+  // Clear rate limit on successful authentication
+  resetRateLimit(`auth:login:${parsed.data.email.toLowerCase()}`);
+
+  redirect("/");
 }
 
 export async function logoutAction(): Promise<void> {
@@ -46,6 +57,12 @@ export async function requestPasswordResetAction(
   const parsed = forgotPasswordSchema.safeParse(rawData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message || "Invalid email address." };
+  }
+
+  // Rate-limiting check: max 3 reset requests per 15 minutes per email
+  const rl = checkRateLimit(`auth:reset:${parsed.data.email.toLowerCase()}`, { limit: 3, windowMs: 15 * 60 * 1000 });
+  if (!rl.success) {
+    return { error: "Too many reset requests. Please wait 15 minutes before trying again." };
   }
 
   const result = await requestPasswordReset(parsed.data.email);

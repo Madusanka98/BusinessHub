@@ -28,6 +28,7 @@ credentials.json
 *.sqlite
 *.sqlite3
 *.tsbuildinfo
+backups/
 
 # Cloudflare Tunnel temporary credentials
 .cloudflared/

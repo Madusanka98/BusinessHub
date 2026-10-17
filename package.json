@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false",
     "test:watch": "vitest",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
@@ -31,6 +31,8 @@
     "@types/node": "^22.13.9",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.2.0",
     "prisma": "^6.4.1",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
