@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Coins,
   Package,
+  Sprout,
 } from "lucide-react";
 
 interface NavHeaderProps {
@@ -45,6 +46,7 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
 
   const navLinks = [
     { href: "/", label: "Overview", icon: LayoutDashboard },
+    { href: "/mushroom", label: "Mushroom Farm", icon: Sprout },
     { href: "/inventory", label: "Inventory & Sales", icon: Package },
     { href: "/finance", label: "Finance & Accounting", icon: Coins },
     { href: "/members", label: "Members & Partners", icon: Users },
@@ -83,7 +85,7 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
             {currentBusiness &&
               navLinks.map((link) => {
                 const Icon = link.icon;
-                const isActive = pathname === link.href;
+                const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
                 return (
                   <Link
                     key={link.href}

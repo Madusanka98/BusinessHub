@@ -752,18 +752,22 @@ model ProductionBatch {
   status             BatchStatus @default(ACTIVE)
   startDate          DateTime    @default(now())
   completedDate      DateTime?
+  expectedYieldKg    Decimal?    @default(0.000) @db.Decimal(10, 3)
+  allocatedCost      Decimal?    @default(0.00) @db.Decimal(12, 2)
+  notes              String?     @db.Text
   initiatedById      String
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
 
-  business     Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  strain       MushroomStrain     @relation(fields: [strainId], references: [id], onDelete: Restrict)
-  recipe       SubstrateRecipe    @relation(fields: [recipeId], references: [id], onDelete: Restrict)
-  chamber      FruitingChamber?   @relation(fields: [chamberId], references: [id], onDelete: SetNull)
-  initiator    User               @relation("BatchInitiator", fields: [initiatedById], references: [id], onDelete: Restrict)
-  phaseLogs    PhaseLog[]
-  harvestLogs  HarvestLog[]
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  strain            MushroomStrain     @relation(fields: [strainId], references: [id], onDelete: Restrict)
+  recipe            SubstrateRecipe    @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  chamber           FruitingChamber?   @relation(fields: [chamberId], references: [id], onDelete: SetNull)
+  initiator         User               @relation("BatchInitiator", fields: [initiatedById], references: [id], onDelete: Restrict)
+  phaseLogs         PhaseLog[]
+  harvestLogs       HarvestLog[]
   contaminationLogs ContaminationLog[]
+  dryingRuns        DryingRun[]
 
   @@unique([businessId, batchCode])
   @@index([businessId, currentPhase])
@@ -796,6 +800,7 @@ model PhaseLog {
   humidity    Decimal?   @db.Decimal(5, 2)
   co2Ppm      Int?
   notes       String?    @db.VarChar(500)
+  loggedById  String?
   loggedAt    DateTime   @default(now())
 
   batch ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
@@ -804,17 +809,19 @@ model PhaseLog {
 }
 
 model HarvestLog {
-  id              String              @id @default(cuid())
-  businessId      String
-  batchId         String
-  freshProductId  String
-  flushNumber     Int                 @default(1)
-  totalFreshWeightKg Decimal          @db.Decimal(10, 3)
-  gradeAWeightKg  Decimal             @default(0.000) @db.Decimal(10, 3)
-  gradeBWeightKg  Decimal             @default(0.000) @db.Decimal(10, 3)
-  scrapWeightKg   Decimal             @default(0.000) @db.Decimal(10, 3)
-  harvestDate     DateTime            @default(now())
-  harvestedById   String
+  id                 String              @id @default(cuid())
+  businessId         String
+  batchId            String
+  freshProductId     String
+  harvestCode        String?             // Format: HLV-[BATCH]-[SEQ]
+  flushNumber        Int                 @default(1)
+  totalFreshWeightKg Decimal             @db.Decimal(10, 3)
+  gradeAWeightKg     Decimal             @default(0.000) @db.Decimal(10, 3)
+  gradeBWeightKg     Decimal             @default(0.000) @db.Decimal(10, 3)
+  scrapWeightKg      Decimal             @default(0.000) @db.Decimal(10, 3)
+  notes              String?             @db.VarChar(500)
+  harvestDate        DateTime            @default(now())
+  harvestedById      String
 
   business Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
   batch    ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
@@ -855,19 +862,28 @@ enum ContaminationReason {
 model DryingRun {
   id                     String   @id @default(cuid())
   businessId             String
+  runCode                String?  // Format: DRY-[YYYYMMDD]-[SEQ]
+  batchId                String?
   freshProductId         String
   driedProductId         String
   freshWeightInKg        Decimal  @db.Decimal(10, 3)
   driedWeightOutKg       Decimal  @db.Decimal(10, 3)
   moistureLossPercentage Decimal  @db.Decimal(5, 2)
+  dryingYieldRatio       Decimal? @db.Decimal(5, 2)
+  lossWeightKg           Decimal? @default(0.000) @db.Decimal(10, 3)
+  lossReason             String?  @db.VarChar(255)
+  conductedById          String?
+  notes                  String?  @db.Text
   startedAt              DateTime @default(now())
   completedAt            DateTime @default(now())
 
-  business     Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  freshProduct Product  @relation("DryingFreshInput", fields: [freshProductId], references: [id], onDelete: Restrict)
-  driedProduct Product  @relation("DryingDriedOutput", fields: [driedProductId], references: [id], onDelete: Restrict)
+  business     Business         @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  batch        ProductionBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  freshProduct Product          @relation("DryingFreshInput", fields: [freshProductId], references: [id], onDelete: Restrict)
+  driedProduct Product          @relation("DryingDriedOutput", fields: [driedProductId], references: [id], onDelete: Restrict)
 
   @@index([businessId, startedAt])
+  @@index([batchId])
 }
 
 // ==========================================
