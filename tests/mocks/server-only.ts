@@ -1,2 +1,4 @@
 // Mock for 'server-only' in test environments
-export default {};
+const serverOnlyMock = {};
+export default serverOnlyMock;
+
