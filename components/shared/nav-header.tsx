@@ -14,6 +14,7 @@ import {
   PlusCircle,
   LogOut,
   ShieldCheck,
+  Coins,
 } from "lucide-react";
 
 interface NavHeaderProps {
@@ -43,6 +44,7 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
 
   const navLinks = [
     { href: "/", label: "Overview", icon: LayoutDashboard },
+    { href: "/finance", label: "Finance & Accounting", icon: Coins },
     { href: "/members", label: "Members & Partners", icon: Users },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/activity", label: "Activity Log", icon: History },

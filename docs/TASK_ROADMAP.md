@@ -93,11 +93,21 @@ graph TD
   - [x] 35 automated tests passing with zero TypeScript errors and successful production build.
 
 ---
+
+### Task 5: Finance & Profit-Sharing Module
+- **Objective**: Implement multi-tenant financial ledgers, income & expense tracking with dual approvals, partner capital contributions, partner loans, configurable profit/loss sharing rules, and period closing.
+- **Dependencies**: Task 4.
 - **Acceptance Criteria**:
-  - Super Admin dashboard protected by platform-level authorization guard.
-  - Create business form with name, slug, owner limit (1–10), and primary owner email.
-  - Dispatches invitation setup link to the new owner.
-  - Audit logging of business creation events.
+  - [x] Dual-approval income & expense tracking with category classification and approval threshold (`modules/finance/services/transaction.service.ts`).
+  - [x] Partner capital contribution ledger and partner drawing requests with co-owner sign-off (`modules/finance/services/capital.service.ts`).
+  - [x] Partner position balance sheets calculating net position: `(capital + distributions) - drawings`.
+  - [x] Partner & business loan agreements with amortized repayments separating principal and interest (`modules/finance/services/loan.service.ts`).
+  - [x] Configurable, versioned profit/loss-sharing rules supporting custom %, equal split, capital-based, and loss policies (`modules/finance/services/profitSharing.service.ts`).
+  - [x] Deterministic decimal-safe allocation calculator with integer cent remainder distribution (`modules/finance/utils/decimal.ts`).
+  - [x] Period closing engine locking historical transactions and generating immutable distribution snapshots.
+  - [x] Responsive Next.js App Router UI pages (`/finance`, `/finance/transactions`, `/finance/capital`, `/finance/loans`, `/finance/profit-sharing`).
+  - [x] Database migration `20261017180619_add_finance_and_profit_sharing` applied to MySQL.
+  - [x] 48 automated tests passing across 8 suites with successful production build.
 
 ---
 

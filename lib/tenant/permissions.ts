@@ -18,6 +18,10 @@ export type Permission =
   | "finance:capital:view"
   | "finance:drawings:request"
   | "finance:drawings:approve"
+  | "finance:loans:manage"
+  | "finance:loans:view"
+  | "finance:rules:manage"
+  | "finance:rules:view"
   | "finance:period:close"
   | "finance:reports:view"
   // Core Inventory & Commerce
@@ -63,6 +67,10 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "finance:capital:view",
     "finance:drawings:request",
     "finance:drawings:approve",
+    "finance:loans:manage",
+    "finance:loans:view",
+    "finance:rules:manage",
+    "finance:rules:view",
     "finance:period:close",
     "finance:reports:view",
     "inventory:products:view",
@@ -88,6 +96,8 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "finance:transactions:create",
     "finance:capital:view",
     "finance:drawings:request",
+    "finance:loans:view",
+    "finance:rules:view",
     "finance:reports:view",
     "inventory:products:view",
     "sales:orders:view",
@@ -128,6 +138,9 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
   VIEWER: new Set<Permission>([
     "tenancy:members:view",
     "finance:transactions:view",
+    "finance:capital:view",
+    "finance:loans:view",
+    "finance:rules:view",
     "finance:reports:view",
     "inventory:products:view",
     "sales:orders:view",
