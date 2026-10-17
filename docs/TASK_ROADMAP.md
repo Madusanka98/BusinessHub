@@ -39,10 +39,13 @@ graph TD
 - **Objective**: Formalize business requirements, user stories, role permissions matrix, multi-tenant owner limits (1–10), invitation lifecycle, and mushroom production domain models.
 - **Dependencies**: Task 0.
 - **Acceptance Criteria**:
-  - Detailed actor matrix: Super Admin, Business Owner, Partner, Business Manager, Member, Cultivation Tech.
-  - Specification of owner limit constraints (default 10, configurable per business).
-  - Step-by-step invitation flow with single-use, expiring setup links.
-  - Domain glossary and entity relationships for both core business and mushroom module.
+  - [x] Detailed actor matrix: Super Admin, Business Owner, Partner, Business Manager, Member, Cultivation Tech ([USER_PERSONAS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/USER_PERSONAS.md), [ROLE_PERMISSION_MATRIX.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/ROLE_PERMISSION_MATRIX.md)).
+  - [x] Specification of owner limit constraints (1–10 owners enforced server-side, [BUSINESS_REQUIREMENTS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/BUSINESS_REQUIREMENTS.md)).
+  - [x] Step-by-step invitation flow with single-use, expiring setup links ([BUSINESS_WORKFLOWS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/BUSINESS_WORKFLOWS.md), [USER_STORIES.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/USER_STORIES.md)).
+  - [x] Domain glossary and entity relationships for both core business and mushroom module ([BUSINESS_REQUIREMENTS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/BUSINESS_REQUIREMENTS.md), [MVP_SCOPE.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/MVP_SCOPE.md)).
+  - [x] Reference analysis for Odoo, Zoho Books, ERPNext, and Next.js evals ([REFERENCE_ANALYSIS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/REFERENCE_ANALYSIS.md)).
+  - [x] Measurable non-functional requirements and testing benchmarks ([NON_FUNCTIONAL_REQUIREMENTS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/NON_FUNCTIONAL_REQUIREMENTS.md)).
+  - [x] Accounting governance decisions and open questions with recommended defaults ([OPEN_QUESTIONS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/requirements/OPEN_QUESTIONS.md)).
 
 ---
 
