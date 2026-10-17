@@ -15,6 +15,7 @@ import {
   LogOut,
   ShieldCheck,
   Coins,
+  Package,
 } from "lucide-react";
 
 interface NavHeaderProps {
@@ -44,6 +45,7 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
 
   const navLinks = [
     { href: "/", label: "Overview", icon: LayoutDashboard },
+    { href: "/inventory", label: "Inventory & Sales", icon: Package },
     { href: "/finance", label: "Finance & Accounting", icon: Coins },
     { href: "/members", label: "Members & Partners", icon: Users },
     { href: "/settings", label: "Settings", icon: Settings },

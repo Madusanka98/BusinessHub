@@ -28,6 +28,8 @@ export type Permission =
   | "inventory:products:view"
   | "inventory:products:manage"
   | "inventory:stock:adjust"
+  | "purchases:view"
+  | "purchases:manage"
   | "sales:orders:view"
   | "sales:orders:manage"
   | "contacts:manage"
@@ -76,6 +78,8 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "inventory:products:view",
     "inventory:products:manage",
     "inventory:stock:adjust",
+    "purchases:view",
+    "purchases:manage",
     "sales:orders:view",
     "sales:orders:manage",
     "contacts:manage",
@@ -100,6 +104,7 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "finance:rules:view",
     "finance:reports:view",
     "inventory:products:view",
+    "purchases:view",
     "sales:orders:view",
     "mushroom:batches:view",
     "mushroom:reports:view",
@@ -111,6 +116,8 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "inventory:products:view",
     "inventory:products:manage",
     "inventory:stock:adjust",
+    "purchases:view",
+    "purchases:manage",
     "sales:orders:view",
     "sales:orders:manage",
     "contacts:manage",
@@ -143,6 +150,7 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "finance:rules:view",
     "finance:reports:view",
     "inventory:products:view",
+    "purchases:view",
     "sales:orders:view",
     "mushroom:batches:view",
     "mushroom:reports:view",
