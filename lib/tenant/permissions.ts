@@ -42,14 +42,21 @@ export type Permission =
   | "mushroom:harvest:log"
   | "mushroom:waste:log"
   | "mushroom:drying:process"
-  | "mushroom:reports:view";
+  | "mushroom:reports:view"
+  // Reports, Schedules & Notifications
+  | "reports:view"
+  | "reports:export"
+  | "reports:schedule:manage"
+  | "notifications:preferences:manage";
 
 export type SuperAdminPermission =
   | "superadmin:business:create"
+  | "superadmin:business:read"
   | "superadmin:business:suspend"
   | "superadmin:business:archive"
   | "superadmin:owner:assign"
-  | "superadmin:platform:audit";
+  | "superadmin:platform:audit"
+  | "superadmin:platform:settings";
 
 const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
   OWNER: new Set<Permission>([
@@ -92,6 +99,10 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "mushroom:waste:log",
     "mushroom:drying:process",
     "mushroom:reports:view",
+    "reports:view",
+    "reports:export",
+    "reports:schedule:manage",
+    "notifications:preferences:manage",
   ]),
 
   PARTNER_FINANCE: new Set<Permission>([
@@ -108,6 +119,10 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "sales:orders:view",
     "mushroom:batches:view",
     "mushroom:reports:view",
+    "reports:view",
+    "reports:export",
+    "reports:schedule:manage",
+    "notifications:preferences:manage",
   ]),
 
   PARTNER_OPERATIONS: new Set<Permission>([
@@ -130,6 +145,10 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "mushroom:waste:log",
     "mushroom:drying:process",
     "mushroom:reports:view",
+    "reports:view",
+    "reports:export",
+    "reports:schedule:manage",
+    "notifications:preferences:manage",
   ]),
 
   STAFF: new Set<Permission>([
@@ -140,6 +159,7 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "mushroom:harvest:log",
     "mushroom:waste:log",
     "mushroom:drying:process",
+    "reports:view",
   ]),
 
   VIEWER: new Set<Permission>([
@@ -154,6 +174,7 @@ const ROLE_PERMISSIONS: Record<MembershipRole, Set<Permission>> = {
     "sales:orders:view",
     "mushroom:batches:view",
     "mushroom:reports:view",
+    "reports:view",
   ]),
 };
 

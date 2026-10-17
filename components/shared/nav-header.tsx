@@ -17,6 +17,8 @@ import {
   Coins,
   Package,
   Sprout,
+  BarChart3,
+  ShieldAlert,
 } from "lucide-react";
 
 interface NavHeaderProps {
@@ -46,6 +48,7 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
 
   const navLinks = [
     { href: "/", label: "Overview", icon: LayoutDashboard },
+    { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/mushroom", label: "Mushroom Farm", icon: Sprout },
     { href: "/inventory", label: "Inventory & Sales", icon: Package },
     { href: "/finance", label: "Finance & Accounting", icon: Coins },
@@ -103,13 +106,22 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
               })}
 
             {user.isSuperAdmin && (
-              <Link
-                href="/businesses/new"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/25 transition-colors ml-2"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>New Business</span>
-              </Link>
+              <>
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20 hover:bg-amber-500/25 transition-colors ml-2"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Platform Admin</span>
+                </Link>
+                <Link
+                  href="/businesses/new"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/25 transition-colors ml-1"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>New Business</span>
+                </Link>
+              </>
             )}
           </nav>
 

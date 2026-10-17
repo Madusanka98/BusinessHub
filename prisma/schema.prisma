@@ -35,6 +35,7 @@ model User {
   approvedTransactions FinancialTransaction[] @relation("TransactionApprover")
   initiatedBatches    ProductionBatch[]      @relation("BatchInitiator")
   harvestLogs         HarvestLog[]           @relation("HarvestUser")
+  notificationPreferences NotificationPreference[]
 
   @@index([email])
 }
@@ -104,6 +105,8 @@ model Business {
   harvestLogs            HarvestLog[]
   contaminationLogs      ContaminationLog[]
   dryingRuns             DryingRun[]
+  scheduledReports       ScheduledReport[]
+  notificationPreferences NotificationPreference[]
 
   @@index([slug])
   @@index([status])
@@ -908,3 +911,106 @@ model AuditEvent {
   @@index([userId, timestamp])
   @@index([actionType])
 }
+
+// ==========================================
+// 6. REPORTS, SCHEDULED JOBS & NOTIFICATIONS
+// ==========================================
+
+model ScheduledReport {
+  id          String          @id @default(cuid())
+  businessId  String
+  name        String
+  reportType  ReportType
+  frequency   ReportFrequency @default(WEEKLY)
+  dayOfWeek   Int?            @default(1) // 0=Sunday, 1=Monday, etc.
+  dayOfMonth  Int?            @default(1) // 1-31
+  timeOfDay   String          @default("08:00") // HH:mm
+  timezone    String          @default("Asia/Colombo")
+  recipients  Json            // string[] email list
+  format      ReportFormat    @default(CSV)
+  isActive    Boolean         @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  business    Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  runs        ScheduledReportRun[]
+
+  @@index([businessId, isActive])
+  @@index([nextRunAt])
+}
+
+enum ReportType {
+  PROFIT_AND_LOSS
+  SALES_SUMMARY
+  PURCHASES_SUMMARY
+  INVENTORY_VALUATION
+  LOW_STOCK_ALERT
+  MUSHROOM_PRODUCTION
+  CASH_FLOW
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum ReportFormat {
+  CSV
+  JSON
+}
+
+model ScheduledReportRun {
+  id                  String       @id @default(cuid())
+  scheduledReportId   String
+  status              JobRunStatus @default(PENDING)
+  startedAt           DateTime     @default(now())
+  completedAt         DateTime?
+  executionDurationMs Int?
+  recipientsCount     Int          @default(0)
+  errorMessage        String?      @db.Text
+
+  scheduledReport ScheduledReport @relation(fields: [scheduledReportId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledReportId, startedAt])
+}
+
+enum JobRunStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+model NotificationPreference {
+  id                    String   @id @default(cuid())
+  businessId            String
+  userId                String
+  emailNotifications    Boolean  @default(true)
+  lowStockAlerts        Boolean  @default(true)
+  productionPhaseAlerts Boolean  @default(true)
+  weeklySummary         Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+}
+
+model PlatformSettings {
+  id                 String   @id @default(cuid())
+  platformName       String   @default("BusinessHub SaaS")
+  supportEmail       String   @default("support@businesshub.local")
+  defaultTimezone    String   @default("Asia/Colombo")
+  defaultCurrency    String   @default("LKR")
+  enableRegistration Boolean  @default(false)
+  maintenanceMode    Boolean  @default(false)
+  updatedById        String?
+  updatedAt          DateTime @updatedAt
+}
+
