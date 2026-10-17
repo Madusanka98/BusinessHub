@@ -53,10 +53,13 @@ graph TD
 - **Objective**: Design Next.js App Router directory structure, component hierarchy, server actions/service patterns, Zod validation pipelines, and Hostinger deployment strategy.
 - **Dependencies**: Task 1.
 - **Acceptance Criteria**:
-  - Project directory layout specified (`app/`, `components/`, `lib/`, `prisma/`, `types/`).
-  - Strict tenant boundary pattern defined (server-side context extraction, data isolation).
-  - Next.js version selection justified based on Node.js v24 compatibility and stability.
-  - Shadcn/ui + Tailwind CSS design system and color palette defined.
+  - [x] Project directory layout specified (`app/`, `components/`, `lib/`, `prisma/`, `modules/`, `types/`) ([NEXTJS_PROJECT_STRUCTURE.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/NEXTJS_PROJECT_STRUCTURE.md)).
+  - [x] Strict tenant boundary pattern defined (server-side context extraction, data isolation) ([TENANT_ISOLATION.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/TENANT_ISOLATION.md)).
+  - [x] Complete relational database ERD and canonical Prisma schema ([DATABASE_ERD.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/DATABASE_ERD.md), [schema.prisma](file:///d:/RND/next%20js/BusinessHub-SaaS/prisma/schema.prisma)).
+  - [x] Concurrency-safe 1–10 owner limit locking strategy documented ([TENANT_ISOLATION.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/TENANT_ISOLATION.md)).
+  - [x] Safe Prisma migration and Hostinger deployment roadmap ([DATABASE_MIGRATION_STRATEGY.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/DATABASE_MIGRATION_STRATEGY.md)).
+  - [x] 6-step reusable authorization pipeline and security boundaries ([SECURITY_ARCHITECTURE.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/SECURITY_ARCHITECTURE.md)).
+  - [x] Formal Architecture Decision Records ADR 01–10 ([ARCHITECTURE_DECISIONS.md](file:///d:/RND/next%20js/BusinessHub-SaaS/docs/architecture/ARCHITECTURE_DECISIONS.md)).
 
 ---
 

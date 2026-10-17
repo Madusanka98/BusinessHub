@@ -1,0 +1,745 @@
+// BusinessHub SaaS - Canonical Database Schema
+// Database Engine: MySQL 8.0+ / MariaDB 10.6+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. IDENTITY & MULTI-TENANCY ENGINE
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  phone         String?
+  avatarUrl     String?
+  isSuperAdmin  Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relational links
+  memberships         BusinessMembership[]
+  accounts            Account[]
+  sessions            Session[]
+  auditEvents         AuditEvent[]
+  createdTransactions FinancialTransaction[] @relation("TransactionCreator")
+  approvedTransactions FinancialTransaction[] @relation("TransactionApprover")
+  initiatedBatches    ProductionBatch[]      @relation("BatchInitiator")
+  harvestLogs         HarvestLog[]           @relation("HarvestUser")
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Business {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  status      BusinessStatus @default(ACTIVE)
+  maxOwners   Int            @default(10) // Business limit: 1-10 owners enforced server-side
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Tenant relational roots
+  settings               BusinessSettings?
+  memberships            BusinessMembership[]
+  invitationTokens       InvitationToken[]
+  auditEvents            AuditEvent[]
+  financialTransactions  FinancialTransaction[]
+  transactionCategories  TransactionCategory[]
+  capitalContributions   PartnerCapitalContribution[]
+  partnerLoans           PartnerLoan[]
+  partnerDrawings        PartnerDrawing[]
+  closedPeriods          ClosedPeriod[]
+  products               Product[]
+  stockMovements         StockMovement[]
+  customers              Customer[]
+  suppliers              Supplier[]
+  orders                 Order[]
+  mushroomStrains        MushroomStrain[]
+  substrateRecipes       SubstrateRecipe[]
+  fruitingChambers       FruitingChamber[]
+  productionBatches      ProductionBatch[]
+  harvestLogs            HarvestLog[]
+  contaminationLogs      ContaminationLog[]
+  dryingRuns             DryingRun[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum BusinessStatus {
+  PENDING_SETUP
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+model BusinessMembership {
+  id                    String           @id @default(cuid())
+  businessId            String
+  userId                String
+  role                  MembershipRole   @default(STAFF)
+  status                MembershipStatus @default(ACTIVE)
+  equityPercentage      Decimal          @default(0.00) @db.Decimal(5, 2)
+  profitSharePercentage Decimal          @default(0.00) @db.Decimal(5, 2)
+  joinedAt              DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Partner financial records
+  capitalContributions PartnerCapitalContribution[]
+  loans                PartnerLoan[]
+  drawings             PartnerDrawing[]
+  profitDistributions  ProfitDistribution[]
+
+  @@unique([businessId, userId])
+  @@index([businessId, role])
+  @@index([userId])
+}
+
+enum MembershipRole {
+  OWNER
+  PARTNER_FINANCE
+  PARTNER_OPERATIONS
+  STAFF
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  REVOKED
+}
+
+model BusinessSettings {
+  id                       String   @id @default(cuid())
+  businessId               String   @unique
+  currency                 String   @default("LKR")
+  expenseApprovalThreshold Decimal  @default(500.00) @db.Decimal(12, 2)
+  defaultReservePercentage Decimal  @default(20.00) @db.Decimal(5, 2)
+  autoDeductInventory      Boolean  @default(true)
+  updatedAt                DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model InvitationToken {
+  id                   String           @id @default(cuid())
+  businessId           String
+  email                String
+  tokenHash            String           @unique // SHA-256 hash of 256-bit entropy token
+  role                 MembershipRole   @default(STAFF)
+  proposedEquity       Decimal?         @db.Decimal(5, 2)
+  proposedProfitShare  Decimal?         @db.Decimal(5, 2)
+  status               InvitationStatus @default(PENDING)
+  expiresAt            DateTime
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@index([email])
+}
+
+enum InvitationStatus {
+  PENDING
+  CONSUMED
+  EXPIRED
+  REVOKED
+}
+
+// ==========================================
+// 2. CORE FINANCE & PARTNER EQUITY
+// ==========================================
+
+model TransactionCategory {
+  id          String          @id @default(cuid())
+  businessId  String
+  name        String
+  type        TransactionType
+  createdAt   DateTime        @default(now())
+
+  business     Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  transactions FinancialTransaction[]
+
+  @@unique([businessId, name, type])
+  @@index([businessId])
+}
+
+model FinancialTransaction {
+  id              String          @id @default(cuid())
+  businessId      String
+  categoryId      String
+  orderId         String?         // Optional link to customer order
+  type            TransactionType
+  amount          Decimal         @db.Decimal(12, 2)
+  paymentMethod   PaymentMethod   @default(CASH)
+  description     String          @db.VarChar(500)
+  receiptUrl      String?         @db.VarChar(1000)
+  approvalStatus  ApprovalStatus  @default(ACTIVE)
+  isLocked        Boolean         @default(false) // Locked when accounting period closes
+  closedPeriodId  String?
+  transactionDate DateTime
+  createdById     String
+  approvedById    String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  business     Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  category     TransactionCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  order        Order?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  closedPeriod ClosedPeriod?        @relation(fields: [closedPeriodId], references: [id], onDelete: SetNull)
+  creator      User                 @relation("TransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  approver     User?                @relation("TransactionApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, transactionDate])
+  @@index([businessId, approvalStatus])
+  @@index([categoryId])
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  MOBILE_PAYMENT
+  CHEQUE
+}
+
+enum ApprovalStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  REJECTED
+}
+
+model PartnerCapitalContribution {
+  id               String   @id @default(cuid())
+  businessId       String
+  membershipId     String
+  amount           Decimal  @db.Decimal(12, 2)
+  paymentReference String?
+  notes            String?  @db.VarChar(500)
+  contributionDate DateTime
+  createdAt        DateTime @default(now())
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  membership BusinessMembership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, contributionDate])
+  @@index([membershipId])
+}
+
+model PartnerLoan {
+  id                  String     @id @default(cuid())
+  businessId          String
+  membershipId        String
+  principalAmount     Decimal    @db.Decimal(12, 2)
+  annualInterestRate  Decimal    @default(0.00) @db.Decimal(5, 2)
+  outstandingBalance  Decimal    @db.Decimal(12, 2)
+  startDate           DateTime
+  maturityDate        DateTime?
+  status              LoanStatus @default(ACTIVE)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  membership BusinessMembership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, status])
+  @@index([membershipId])
+}
+
+enum LoanStatus {
+  ACTIVE
+  REPAID
+  DEFAULTED
+}
+
+model PartnerDrawing {
+  id           String         @id @default(cuid())
+  businessId   String
+  membershipId String
+  amount       Decimal        @db.Decimal(12, 2)
+  status       ApprovalStatus @default(PENDING_APPROVAL)
+  approvedById String?
+  requestDate  DateTime       @default(now())
+  approvedAt   DateTime?
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  membership BusinessMembership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, requestDate])
+  @@index([membershipId])
+}
+
+model ClosedPeriod {
+  id                String   @id @default(cuid())
+  businessId        String
+  periodName        String   // e.g. "October 2026"
+  startDate         DateTime
+  endDate           DateTime
+  totalIncome       Decimal  @db.Decimal(12, 2)
+  totalExpense      Decimal  @db.Decimal(12, 2)
+  netProfit         Decimal  @db.Decimal(12, 2)
+  retainedReserve   Decimal  @db.Decimal(12, 2)
+  distributedAmount Decimal  @db.Decimal(12, 2)
+  closedById        String
+  closedAt          DateTime @default(now())
+
+  business      Business               @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  transactions  FinancialTransaction[]
+  distributions ProfitDistribution[]
+
+  @@unique([businessId, startDate, endDate])
+  @@index([businessId])
+}
+
+model ProfitDistribution {
+  id                    String   @id @default(cuid())
+  closedPeriodId        String
+  membershipId          String
+  profitSharePercentage Decimal  @db.Decimal(5, 2)
+  allocatedAmount       Decimal  @db.Decimal(12, 2)
+  distributedAt         DateTime @default(now())
+
+  closedPeriod ClosedPeriod       @relation(fields: [closedPeriodId], references: [id], onDelete: Restrict)
+  membership   BusinessMembership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@index([closedPeriodId])
+  @@index([membershipId])
+}
+
+// ==========================================
+// 3. CORE INVENTORY & COMMERCE
+// ==========================================
+
+model Product {
+  id               String          @id @default(cuid())
+  businessId       String
+  sku              String
+  name             String
+  category         ProductCategory
+  unitOfMeasure    UnitOfMeasure   @default(PIECE)
+  currentStock     Decimal         @default(0.000) @db.Decimal(12, 3)
+  unitCost         Decimal         @default(0.00) @db.Decimal(12, 2)
+  sellingPrice     Decimal         @default(0.00) @db.Decimal(12, 2)
+  reorderThreshold Decimal         @default(10.000) @db.Decimal(12, 3)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  stockMovements    StockMovement[]
+  orderItems        OrderItem[]
+  recipeIngredients RecipeIngredient[]
+  harvestLogs       HarvestLog[]       @relation("FreshProductHarvest")
+  dryingInputs      DryingRun[]        @relation("DryingFreshInput")
+  dryingOutputs     DryingRun[]        @relation("DryingDriedOutput")
+
+  @@unique([businessId, sku])
+  @@index([businessId, category])
+}
+
+enum ProductCategory {
+  RAW_MATERIAL
+  PACKAGING
+  FRESH_MUSHROOM
+  DRIED_MUSHROOM
+  GENERAL_PRODUCT
+}
+
+enum UnitOfMeasure {
+  KG
+  GRAM
+  BAG
+  PIECE
+  LITER
+  PACK
+}
+
+model StockMovement {
+  id           String            @id @default(cuid())
+  businessId   String
+  productId    String
+  type         StockMovementType
+  quantity     Decimal           @db.Decimal(12, 3) // Positive for influx, negative for outflux
+  balanceAfter Decimal           @db.Decimal(12, 3)
+  referenceId  String?           // BatchID, OrderID, or AdjustmentID
+  notes        String?           @db.VarChar(500)
+  createdAt    DateTime          @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, createdAt])
+  @@index([productId, createdAt])
+}
+
+enum StockMovementType {
+  PURCHASE_RECEIPT
+  PRODUCTION_CONSUMPTION
+  PRODUCTION_YIELD
+  SALE_DISPATCH
+  ADJUSTMENT_SCRAP
+  ADJUSTMENT_AUDIT
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  email      String?
+  phone      String?
+  address    String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@index([businessId, name])
+}
+
+model Supplier {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  contactPerson String?
+  email      String?
+  phone      String?
+  address    String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, name])
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  businessId    String
+  customerId    String
+  orderNumber   String
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  status        OrderStatus   @default(CONFIRMED)
+  paymentStatus PaymentStatus @default(UNPAID)
+  orderDate     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  business     Business               @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer     Customer               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items        OrderItem[]
+  transactions FinancialTransaction[]
+
+  @@unique([businessId, orderNumber])
+  @@index([businessId, orderDate])
+  @@index([customerId])
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  PROCESSING
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Decimal @db.Decimal(12, 3)
+  unitPrice Decimal @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(12, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ==========================================
+// 4. MUSHROOM CULTIVATION SPECIALIZED MODULE
+// ==========================================
+
+model MushroomStrain {
+  id                 String   @id @default(cuid())
+  businessId         String
+  name               String   // e.g. "American Oyster"
+  scientificName     String?  // e.g. "Pleurotus ostreatus"
+  optimalTempRange   String?  // e.g. "20-25 C"
+  optimalHumidity    String?  // e.g. "85-95%"
+  incubationDays     Int      @default(21)
+  fruitingDays       Int      @default(7)
+  createdAt          DateTime @default(now())
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  recipes  SubstrateRecipe[]
+  batches  ProductionBatch[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+model SubstrateRecipe {
+  id                 String   @id @default(cuid())
+  businessId         String
+  strainId           String
+  name               String   // e.g. "Standard Sawdust Mix 1kg"
+  standardBagWeightKg Decimal @db.Decimal(6, 3)
+  instructions       String?  @db.Text
+  createdAt          DateTime @default(now())
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  strain      MushroomStrain     @relation(fields: [strainId], references: [id], onDelete: Restrict)
+  ingredients RecipeIngredient[]
+  batches     ProductionBatch[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  @@index([strainId])
+}
+
+model RecipeIngredient {
+  id                 String  @id @default(cuid())
+  recipeId           String
+  rawMaterialProductId String
+  percentage         Decimal @db.Decimal(5, 2)
+  quantityPerBag     Decimal @db.Decimal(8, 4) // Exact kg per bag
+
+  recipe      SubstrateRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  rawMaterial Product         @relation(fields: [rawMaterialProductId], references: [id], onDelete: Restrict)
+
+  @@unique([recipeId, rawMaterialProductId])
+  @@index([recipeId])
+}
+
+model FruitingChamber {
+  id           String        @id @default(cuid())
+  businessId   String
+  name         String        // e.g. "Chamber Alpha"
+  capacityBags Int           @default(1000)
+  status       ChamberStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  batches  ProductionBatch[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+enum ChamberStatus {
+  ACTIVE
+  CLEANING
+  MAINTENANCE
+  EMPTY
+}
+
+model ProductionBatch {
+  id                 String      @id @default(cuid())
+  businessId         String
+  batchCode          String      // Format: MB-[STRAIN]-[YYYYMMDD]-[SEQ]
+  strainId           String
+  recipeId           String
+  chamberId          String?
+  initialBagsCount   Int
+  viableBagsCount    Int
+  currentPhase       BatchPhase  @default(PREPARATION)
+  status             BatchStatus @default(ACTIVE)
+  startDate          DateTime    @default(now())
+  completedDate      DateTime?
+  initiatedById      String
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  strain       MushroomStrain     @relation(fields: [strainId], references: [id], onDelete: Restrict)
+  recipe       SubstrateRecipe    @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  chamber      FruitingChamber?   @relation(fields: [chamberId], references: [id], onDelete: SetNull)
+  initiator    User               @relation("BatchInitiator", fields: [initiatedById], references: [id], onDelete: Restrict)
+  phaseLogs    PhaseLog[]
+  harvestLogs  HarvestLog[]
+  contaminationLogs ContaminationLog[]
+
+  @@unique([businessId, batchCode])
+  @@index([businessId, currentPhase])
+  @@index([businessId, status])
+  @@index([strainId])
+}
+
+enum BatchPhase {
+  PREPARATION
+  STERILIZATION
+  INOCULATION
+  INCUBATION
+  FRUITING
+  COMPLETED
+  TERMINATED
+}
+
+enum BatchStatus {
+  ACTIVE
+  COMPLETED
+  TERMINATED_CONTAMINATED
+  CANCELLED
+}
+
+model PhaseLog {
+  id          String     @id @default(cuid())
+  batchId     String
+  phase       BatchPhase
+  temperature Decimal?   @db.Decimal(5, 2)
+  humidity    Decimal?   @db.Decimal(5, 2)
+  co2Ppm      Int?
+  notes       String?    @db.VarChar(500)
+  loggedAt    DateTime   @default(now())
+
+  batch ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, loggedAt])
+}
+
+model HarvestLog {
+  id              String              @id @default(cuid())
+  businessId      String
+  batchId         String
+  freshProductId  String
+  flushNumber     Int                 @default(1)
+  totalFreshWeightKg Decimal          @db.Decimal(10, 3)
+  gradeAWeightKg  Decimal             @default(0.000) @db.Decimal(10, 3)
+  gradeBWeightKg  Decimal             @default(0.000) @db.Decimal(10, 3)
+  scrapWeightKg   Decimal             @default(0.000) @db.Decimal(10, 3)
+  harvestDate     DateTime            @default(now())
+  harvestedById   String
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  batch    ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  product  Product         @relation("FreshProductHarvest", fields: [freshProductId], references: [id], onDelete: Restrict)
+  harvester User           @relation("HarvestUser", fields: [harvestedById], references: [id], onDelete: Restrict)
+
+  @@index([businessId, harvestDate])
+  @@index([batchId, flushNumber])
+}
+
+model ContaminationLog {
+  id                 String              @id @default(cuid())
+  businessId         String
+  batchId            String
+  phaseDetected      BatchPhase
+  discardedBagsCount Int
+  reason             ContaminationReason @default(UNKNOWN)
+  notes              String?             @db.VarChar(500)
+  loggedAt           DateTime            @default(now())
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  batch    ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, loggedAt])
+  @@index([batchId])
+}
+
+enum ContaminationReason {
+  GREEN_MOLD_TRICHODERMA
+  COBWEB_DACTYLIUM
+  BACTERIAL_BLOTCH
+  BLACK_PIN_MOLD
+  RODENT_PEST
+  STERILIZATION_FAILURE
+  UNKNOWN
+}
+
+model DryingRun {
+  id                     String   @id @default(cuid())
+  businessId             String
+  freshProductId         String
+  driedProductId         String
+  freshWeightInKg        Decimal  @db.Decimal(10, 3)
+  driedWeightOutKg       Decimal  @db.Decimal(10, 3)
+  moistureLossPercentage Decimal  @db.Decimal(5, 2)
+  startedAt              DateTime @default(now())
+  completedAt            DateTime @default(now())
+
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  freshProduct Product  @relation("DryingFreshInput", fields: [freshProductId], references: [id], onDelete: Restrict)
+  driedProduct Product  @relation("DryingDriedOutput", fields: [driedProductId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, startedAt])
+}
+
+// ==========================================
+// 5. IMMUTABLE AUDIT TRAIL
+// ==========================================
+
+model AuditEvent {
+  id           String   @id @default(cuid())
+  businessId   String?  // Nullable for platform-level Super Admin events
+  userId       String?
+  actionType   String   // e.g. "TRANSACTION_APPROVED", "MEMBER_INVITED"
+  targetEntity String   // e.g. "FinancialTransaction", "BusinessMembership"
+  targetId     String
+  clientIp     String?
+  changeDetails Json?   // Structured before/after diff
+  timestamp    DateTime @default(now())
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, timestamp])
+  @@index([userId, timestamp])
+  @@index([actionType])
+}
