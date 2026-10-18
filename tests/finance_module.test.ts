@@ -458,5 +458,39 @@ describe("Task 5: Finance & Profit-Sharing Module", () => {
         )
       ).rejects.toThrow(/conflicts with existing closed period/);
     });
+
+    it("absorbs prior period loss carryforwards before distributing profit under CARRY_FORWARD policy", async () => {
+      // 1. Create a prior closed period with net loss of -$2,000 (after the first close)
+      const priorStart = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+      const priorEnd = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+
+      const lossPeriod = await prisma.closedPeriod.create({
+        data: {
+          businessId,
+          periodName: `Prior Loss Period ${timestamp}`,
+          startDate: priorStart,
+          endDate: priorEnd,
+          totalIncome: 1000,
+          totalExpense: 3000,
+          netProfit: -2000,
+          retainedReserve: 0,
+          distributedAmount: 0,
+          closedById: ownerUserId,
+        },
+      });
+
+      // 2. Test preview with loss absorption starting after the loss period
+      const preview = await previewProfitDistribution(
+        businessId,
+        new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        20
+      );
+
+      expect(Number(preview.period.priorUnabsorbedLoss)).toBe(2000);
+
+      // Clean up the mock loss period
+      await prisma.closedPeriod.delete({ where: { id: lossPeriod.id } });
+    });
   });
 });

@@ -191,12 +191,33 @@ export async function previewProfitDistribution(
   const netProfit = summary.netProfit;
   const reservePercent = new Prisma.Decimal(retainedReservePercentage);
 
+  // If lossPolicy is CARRY_FORWARD, compute unabsorbed loss from prior closed periods
+  let priorUnabsorbedLoss = new Prisma.Decimal(0);
+  if (activeRule.lossPolicy === LossPolicy.CARRY_FORWARD) {
+    const priorClosedPeriods = await prisma.closedPeriod.findMany({
+      where: { businessId, endDate: { lt: startDate } },
+      orderBy: { endDate: "asc" },
+    });
+
+    for (const p of priorClosedPeriods) {
+      if (p.netProfit.lessThan(0)) {
+        priorUnabsorbedLoss = priorUnabsorbedLoss.plus(p.netProfit.abs());
+      } else if (p.netProfit.greaterThan(0)) {
+        const absorbed = Prisma.Decimal.min(priorUnabsorbedLoss, p.netProfit);
+        priorUnabsorbedLoss = priorUnabsorbedLoss.minus(absorbed);
+      }
+    }
+  }
+
   let retainedReserve = new Prisma.Decimal(0);
   let distributableAmount = new Prisma.Decimal(0);
 
   if (netProfit.greaterThan(0)) {
-    retainedReserve = netProfit.times(reservePercent).dividedBy(100);
-    distributableAmount = netProfit.minus(retainedReserve);
+    const netProfitAfterLoss = Prisma.Decimal.max(0, netProfit.minus(priorUnabsorbedLoss));
+    if (netProfitAfterLoss.greaterThan(0)) {
+      retainedReserve = netProfitAfterLoss.times(reservePercent).dividedBy(100);
+      distributableAmount = netProfitAfterLoss.minus(retainedReserve);
+    }
   }
 
   const calculatedAllocations = calculateDeterministicAllocations(
@@ -226,6 +247,7 @@ export async function previewProfitDistribution(
       totalIncome: toDecimalString(summary.totalIncome),
       totalExpense: toDecimalString(summary.totalExpense),
       netProfit: toDecimalString(netProfit),
+      priorUnabsorbedLoss: toDecimalString(priorUnabsorbedLoss),
       retainedReserve: toDecimalString(retainedReserve),
       distributableAmount: toDecimalString(distributableAmount),
     },
@@ -295,16 +317,38 @@ export async function closeFinancialPeriodAndDistribute(
     const netProfit = totalIncome.minus(totalExpense);
     const reservePercent = new Prisma.Decimal(input.retainedReservePercentage);
 
+    // 3. Resolve active rule snapshot
+    const activeRule = await getActiveProfitSharingRule(businessId);
+
+    // If lossPolicy is CARRY_FORWARD, compute unabsorbed loss from prior closed periods
+    let priorUnabsorbedLoss = new Prisma.Decimal(0);
+    if (activeRule.lossPolicy === LossPolicy.CARRY_FORWARD) {
+      const priorClosedPeriods = await tx.closedPeriod.findMany({
+        where: { businessId, endDate: { lt: startDate } },
+        orderBy: { endDate: "asc" },
+      });
+
+      for (const p of priorClosedPeriods) {
+        if (p.netProfit.lessThan(0)) {
+          priorUnabsorbedLoss = priorUnabsorbedLoss.plus(p.netProfit.abs());
+        } else if (p.netProfit.greaterThan(0)) {
+          const absorbed = Prisma.Decimal.min(priorUnabsorbedLoss, p.netProfit);
+          priorUnabsorbedLoss = priorUnabsorbedLoss.minus(absorbed);
+        }
+      }
+    }
+
     let retainedReserve = new Prisma.Decimal(0);
     let distributedAmount = new Prisma.Decimal(0);
 
     if (netProfit.greaterThan(0)) {
-      retainedReserve = netProfit.times(reservePercent).dividedBy(100);
-      distributedAmount = netProfit.minus(retainedReserve);
+      const netProfitAfterLoss = Prisma.Decimal.max(0, netProfit.minus(priorUnabsorbedLoss));
+      if (netProfitAfterLoss.greaterThan(0)) {
+        retainedReserve = netProfitAfterLoss.times(reservePercent).dividedBy(100);
+        distributedAmount = netProfitAfterLoss.minus(retainedReserve);
+      }
     }
 
-    // 3. Resolve active rule snapshot
-    const activeRule = await getActiveProfitSharingRule(businessId);
     const finalizedAllocations = calculateDeterministicAllocations(
       distributedAmount,
       activeRule.allocations.map((a) => ({
@@ -330,6 +374,7 @@ export async function closeFinancialPeriodAndDistribute(
           ruleName: activeRule.name,
           ruleType: activeRule.ruleType,
           lossPolicy: activeRule.lossPolicy,
+          priorUnabsorbedLoss: priorUnabsorbedLoss.toString(),
           allocations: activeRule.allocations,
         } as unknown as Prisma.InputJsonValue,
         closedById: actorUserId,
