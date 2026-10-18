@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/modules/core-tenancy/actions/auth.actions";
 import { TenantSwitcher, AuthorizedBusiness } from "./tenant-switcher";
+import { LanguageSwitcher } from "./language-switcher";
+import { useLanguage } from "@/lib/i18n/language-context";
 import {
   LayoutDashboard,
   Users,
@@ -39,6 +41,7 @@ interface NavHeaderProps {
 export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps) {
   const pathname = usePathname();
   const [isLoggingOut, startLogout] = useTransition();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
     startLogout(async () => {
@@ -47,15 +50,15 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
   };
 
   const navLinks = [
-    { href: "/", label: "Overview", icon: LayoutDashboard },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/mushroom", label: "Mushroom Farm", icon: Sprout },
-    { href: "/inventory", label: "Inventory & Sales", icon: Package },
-    { href: "/finance", label: "Finance & Accounting", icon: Coins },
-    { href: "/members", label: "Members & Partners", icon: Users },
-    { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/activity", label: "Activity Log", icon: History },
-    { href: "/businesses", label: "All Businesses", icon: Building },
+    { href: "/", label: t("nav.overview", "Overview"), icon: LayoutDashboard },
+    { href: "/reports", label: t("nav.reports", "Reports"), icon: BarChart3 },
+    { href: "/mushroom", label: t("nav.mushroom", "Mushroom Farm"), icon: Sprout },
+    { href: "/inventory", label: t("nav.inventory", "Inventory & Sales"), icon: Package },
+    { href: "/finance", label: t("nav.finance", "Finance & Accounting"), icon: Coins },
+    { href: "/members", label: t("nav.members", "Members & Partners"), icon: Users },
+    { href: "/settings", label: t("nav.settings", "Settings"), icon: Settings },
+    { href: "/activity", label: t("nav.activity", "Activity Log"), icon: History },
+    { href: "/businesses", label: t("nav.allBusinesses", "All Businesses"), icon: Building },
   ];
 
   return (
@@ -112,28 +115,30 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20 hover:bg-amber-500/25 transition-colors ml-2"
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Platform Admin</span>
+                  <span>{t("nav.platformAdmin", "Platform Admin")}</span>
                 </Link>
                 <Link
                   href="/businesses/new"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/25 transition-colors ml-1"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
-                  <span>New Business</span>
+                  <span>{t("nav.newBusiness", "New Business")}</span>
                 </Link>
               </>
             )}
           </nav>
 
-          {/* User profile & Sign Out */}
+          {/* User profile, Language Switcher & Sign Out */}
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+
             <div className="text-right hidden sm:block">
               <div className="flex items-center gap-1.5 justify-end">
                 <span className="text-xs font-medium text-slate-200">{user.fullName}</span>
                 {user.isSuperAdmin && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
                     <ShieldCheck className="w-3 h-3" />
-                    Super Admin
+                    {t("nav.superAdmin", "Super Admin")}
                   </span>
                 )}
               </div>
@@ -143,8 +148,8 @@ export function NavHeader({ user, currentBusiness, businesses }: NavHeaderProps)
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              aria-label="Sign out"
-              title="Sign out"
+              aria-label={t("nav.signOut", "Sign out")}
+              title={t("nav.signOut", "Sign out")}
               className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />

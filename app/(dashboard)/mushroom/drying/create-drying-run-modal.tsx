@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { executeDryingRunAction } from "@/modules/mushroom/actions/mushroom.actions";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { Flame, X, Loader2 } from "lucide-react";
 
 interface CreateDryingRunModalProps {
@@ -24,6 +25,7 @@ export function CreateDryingRunModal({
   const [freshIn, setFreshIn] = useState<number>(10);
   const [driedOut, setDriedOut] = useState<number>(1);
   const router = useRouter();
+  const { t } = useLanguage();
 
   const yieldRatio = freshIn > 0 ? ((driedOut / freshIn) * 100).toFixed(1) : "0.0";
   const moistureLoss = (100 - Number(yieldRatio)).toFixed(1);
@@ -54,7 +56,7 @@ export function CreateDryingRunModal({
         className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/30 cursor-pointer"
       >
         <Flame className="w-4 h-4" />
-        <span>Run Drying Process</span>
+        <span>{t("mushroom.drying.newRunBtn", "New Drying Run")}</span>
       </button>
 
       {isOpen && (
@@ -67,9 +69,11 @@ export function CreateDryingRunModal({
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-lg font-bold text-white mb-1">Execute Mushroom Drying Cycle</h2>
+            <h2 className="text-lg font-bold text-white mb-1">
+              {t("mushroom.drying.modalTitle", "Execute Mushroom Drying Cycle")}
+            </h2>
             <p className="text-xs text-slate-400 mb-4">
-              Atomically deducts fresh stock from inventory, credits dried mushroom output, and transfers allocated unit valuation.
+              {t("mushroom.drying.subtitle", "Atomically deducts fresh stock from inventory, credits dried mushroom output, and transfers allocated unit valuation.")}
             </p>
 
             {error && (
@@ -83,7 +87,7 @@ export function CreateDryingRunModal({
                 {/* Source Fresh Product */}
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Source Fresh Product *
+                    {t("mushroom.drying.freshInput", "Source Fresh Product *")}
                   </label>
                   <select
                     name="freshProductId"
@@ -105,7 +109,7 @@ export function CreateDryingRunModal({
                 {/* Destination Dried Product */}
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Destination Dried Product *
+                    {t("mushroom.drying.driedOutput", "Destination Dried Product *")}
                   </label>
                   <select
                     name="driedProductId"
@@ -186,11 +190,11 @@ export function CreateDryingRunModal({
               {/* Yield & Moisture Preview */}
               <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-400">Drying Yield:</span>{" "}
+                  <span className="text-slate-400">{t("mushroom.drying.yieldRatio", "Drying Yield")}:</span>{" "}
                   <span className="font-bold text-emerald-400">{yieldRatio}%</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Moisture Loss:</span>{" "}
+                  <span className="text-slate-400">{t("mushroom.drying.moistureLoss", "Moisture Loss")}:</span>{" "}
                   <span className="font-bold text-amber-400">{moistureLoss}%</span>
                 </div>
               </div>
@@ -199,7 +203,7 @@ export function CreateDryingRunModal({
                 {/* Loss / Crumbs */}
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Processing Loss (kg)
+                    {t("mushroom.drying.lossKg", "Processing Loss (kg)")}
                   </label>
                   <input
                     type="number"
@@ -212,7 +216,9 @@ export function CreateDryingRunModal({
 
                 {/* Loss Reason */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Loss Reason</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.drying.lossReason", "Loss Reason")}
+                  </label>
                   <input
                     type="text"
                     name="lossReason"
@@ -239,7 +245,7 @@ export function CreateDryingRunModal({
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
@@ -247,7 +253,7 @@ export function CreateDryingRunModal({
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{isPending ? "Executing Conversion..." : "Complete Drying Cycle"}</span>
+                  <span>{isPending ? t("common.saving", "Executing Conversion...") : t("mushroom.drying.modalTitle", "Complete Drying Cycle")}</span>
                 </button>
               </div>
             </form>

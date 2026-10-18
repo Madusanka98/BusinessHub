@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/language-context";
 import {
   LayoutGrid,
   Layers,
@@ -14,14 +15,15 @@ import {
 
 export function MushroomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   const links = [
-    { href: "/mushroom", label: "Production Overview", icon: LayoutGrid, exact: true },
-    { href: "/mushroom/batches", label: "Production Batches", icon: Layers },
-    { href: "/mushroom/harvests", label: "Harvest Flushes", icon: Sprout },
-    { href: "/mushroom/contamination", label: "Contamination & Waste", icon: AlertTriangle },
-    { href: "/mushroom/drying", label: "Drying & Processing", icon: Flame },
-    { href: "/mushroom/strains", label: "Strains & Substrates", icon: Dna },
+    { href: "/mushroom", label: t("mushroom.nav.overview", "Production Overview"), icon: LayoutGrid, exact: true },
+    { href: "/mushroom/batches", label: t("mushroom.nav.batches", "Production Batches"), icon: Layers },
+    { href: "/mushroom/harvests", label: t("mushroom.nav.harvests", "Harvest Flushes"), icon: Sprout },
+    { href: "/mushroom/contamination", label: t("mushroom.nav.contamination", "Contamination & Waste"), icon: AlertTriangle },
+    { href: "/mushroom/drying", label: t("mushroom.nav.drying", "Drying & Processing"), icon: Flame },
+    { href: "/mushroom/strains", label: t("mushroom.nav.strains", "Strains & Substrates"), icon: Dna },
   ];
 
   return (

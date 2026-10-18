@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { recordHarvestAction } from "@/modules/mushroom/actions/mushroom.actions";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { Sprout, X, Loader2 } from "lucide-react";
 
 interface RecordHarvestModalProps {
@@ -16,6 +17,7 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]> | null>(null);
   const router = useRouter();
+  const { t } = useLanguage();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,7 +45,7 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
         className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/30 cursor-pointer"
       >
         <Sprout className="w-4 h-4" />
-        <span>Log Harvest Flush</span>
+        <span>{t("mushroom.harvests.recordBtn", "Record Mushroom Flush")}</span>
       </button>
 
       {isOpen && (
@@ -56,9 +58,11 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-lg font-bold text-white mb-1">Record Mushroom Flush</h2>
+            <h2 className="text-lg font-bold text-white mb-1">
+              {t("mushroom.harvests.modalTitle", "Record Mushroom Flush")}
+            </h2>
             <p className="text-xs text-slate-400 mb-4">
-              Log fresh harvested mushrooms. Saleable yield (Grade A + B) will be atomically credited to fresh inventory.
+              {t("mushroom.harvests.modalSubtitle", "Log fresh harvested mushrooms. Saleable yield (Grade A + B) will be atomically credited to fresh inventory.")}
             </p>
 
             {error && (
@@ -71,7 +75,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Batch */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Fruiting Batch *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.fruitingBatch", "Fruiting Batch *")}
+                  </label>
                   <select
                     name="batchId"
                     required
@@ -84,14 +90,16 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                         </option>
                       ))
                     ) : (
-                      <option value="">No batches in FRUITING phase</option>
+                      <option value="">{t("mushroom.harvests.noFruitingBatches", "No batches in FRUITING phase")}</option>
                     )}
                   </select>
                 </div>
 
                 {/* Fresh Product */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Fresh Mushroom Product *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.freshProduct", "Fresh Mushroom Product *")}
+                  </label>
                   <select
                     name="freshProductId"
                     required
@@ -104,7 +112,7 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                         </option>
                       ))
                     ) : (
-                      <option value="">No FRESH_MUSHROOM products</option>
+                      <option value="">{t("mushroom.harvests.noFreshProducts", "No FRESH_MUSHROOM products")}</option>
                     )}
                   </select>
                 </div>
@@ -112,7 +120,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Flush # *</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.flushNumber", "Flush # *")}
+                  </label>
                   <input
                     type="number"
                     name="flushNumber"
@@ -123,7 +133,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Total Fresh (kg) *</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.totalFreshKg", "Total Fresh (kg) *")}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -134,7 +146,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Grade A (kg)</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.gradeAKg", "Grade A (kg)")}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -144,7 +158,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">Grade B (kg)</label>
+                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.gradeBKg", "Grade B (kg)")}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -157,7 +173,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Scrap / Trim Loss (kg)</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.scrapKg", "Scrap / Trim Loss (kg)")}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -167,7 +185,9 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Harvest Date</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.harvests.harvestDate", "Harvest Date")}
+                  </label>
                   <input
                     type="datetime-local"
                     name="harvestDate"
@@ -178,11 +198,13 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Harvest Observations</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {t("mushroom.harvests.observations", "Harvest Observations")}
+                </label>
                 <textarea
                   name="notes"
                   rows={2}
-                  placeholder="Notes on cap size, spore drop, pinhead density..."
+                  placeholder={t("mushroom.harvests.observationsPlaceholder", "Notes on cap size, spore drop, pinhead density...")}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -193,7 +215,7 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
@@ -201,7 +223,7 @@ export function RecordHarvestModal({ fruitingBatches, freshProducts }: RecordHar
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{isPending ? "Posting Yield..." : "Post Harvest Yield"}</span>
+                  <span>{isPending ? t("common.saving", "Saving...") : t("mushroom.harvests.submitBtn", "Post Harvest Yield")}</span>
                 </button>
               </div>
             </form>

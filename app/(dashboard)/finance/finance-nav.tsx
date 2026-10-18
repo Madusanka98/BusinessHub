@@ -3,17 +3,19 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { Coins, Receipt, Wallet, Landmark, PieChart } from "lucide-react";
 
 export function FinanceNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   const links = [
-    { href: "/finance", label: "Financial Overview", icon: Coins, exact: true },
-    { href: "/finance/transactions", label: "Income & Expenses", icon: Receipt },
-    { href: "/finance/capital", label: "Capital & Withdrawals", icon: Wallet },
-    { href: "/finance/loans", label: "Partner & Business Loans", icon: Landmark },
-    { href: "/finance/profit-sharing", label: "Profit Sharing & Periods", icon: PieChart },
+    { href: "/finance", label: t("finance.nav.overview", "Financial Overview"), icon: Coins, exact: true },
+    { href: "/finance/transactions", label: t("finance.nav.transactions", "Income & Expenses"), icon: Receipt },
+    { href: "/finance/capital", label: t("finance.nav.capital", "Capital & Withdrawals"), icon: Wallet },
+    { href: "/finance/loans", label: t("finance.nav.loans", "Partner & Business Loans"), icon: Landmark },
+    { href: "/finance/profit-sharing", label: t("finance.nav.profitSharing", "Profit Sharing & Periods"), icon: PieChart },
   ];
 
   return (

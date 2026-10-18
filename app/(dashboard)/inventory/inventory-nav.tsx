@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/lib/i18n/language-context";
 import {
   LayoutGrid,
   Package,
@@ -14,14 +15,15 @@ import {
 
 export function InventoryNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   const links = [
-    { href: "/inventory", label: "Inventory Overview", icon: LayoutGrid, exact: true },
-    { href: "/inventory/products", label: "Products & Catalog", icon: Package },
-    { href: "/inventory/movements", label: "Stock Movements & Adjust", icon: ArrowLeftRight },
-    { href: "/inventory/purchases", label: "Purchases & Influx", icon: ShoppingBag },
-    { href: "/inventory/sales", label: "Sales & Invoicing", icon: ShoppingCart },
-    { href: "/inventory/contacts", label: "Customers & Suppliers", icon: Users2 },
+    { href: "/inventory", label: t("inventory.nav.overview", "Inventory Overview"), icon: LayoutGrid, exact: true },
+    { href: "/inventory/products", label: t("inventory.nav.products", "Products & Catalog"), icon: Package },
+    { href: "/inventory/movements", label: t("inventory.nav.movements", "Stock Movements & Adjust"), icon: ArrowLeftRight },
+    { href: "/inventory/purchases", label: t("inventory.nav.purchases", "Purchases & Influx"), icon: ShoppingBag },
+    { href: "/inventory/sales", label: t("inventory.nav.sales", "Sales & Invoicing"), icon: ShoppingCart },
+    { href: "/inventory/contacts", label: t("inventory.nav.contacts", "Customers & Suppliers"), icon: Users2 },
   ];
 
   return (

@@ -6,6 +6,7 @@ import {
   updateProductAction,
   archiveProductAction,
 } from "@/modules/commerce/actions/commerce.actions";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { ProductCategory, UnitOfMeasure } from "@prisma/client";
 import {
   PlusCircle,
@@ -45,6 +46,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -104,7 +106,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by name, SKU, barcode..."
+              placeholder={t("inventory.products.searchPlaceholder", "Search by name, SKU, barcode...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -117,7 +119,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
             >
-              <option value="ALL">All Categories</option>
+              <option value="ALL">{t("inventory.products.allCategories", "All Categories")}</option>
               {Object.values(ProductCategory).map((cat) => (
                 <option key={cat} value={cat}>
                   {cat.replace(/_/g, " ")}
@@ -133,10 +135,10 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               setErrorMsg(null);
               setIsAddModalOpen(true);
             }}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition-all cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Add Product</span>
+            <span>{t("inventory.products.addBtn", "+ Add Product")}</span>
           </button>
         )}
       </div>
@@ -147,21 +149,21 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
-                <th className="py-3 px-4">Product</th>
-                <th className="py-3 px-4">SKU / Barcode</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4 text-right">Unit Cost (LKR)</th>
-                <th className="py-3 px-4 text-right">Selling Price (LKR)</th>
-                <th className="py-3 px-4 text-right">Current Stock</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                {canManage && <th className="py-3 px-4 text-right">Actions</th>}
+                <th className="py-3 px-4">{t("common.product", "Product")}</th>
+                <th className="py-3 px-4">{t("inventory.products.sku", "SKU / Barcode")}</th>
+                <th className="py-3 px-4">{t("inventory.products.category", "Category")}</th>
+                <th className="py-3 px-4 text-right">{t("inventory.products.cost", "Unit Cost (LKR)")}</th>
+                <th className="py-3 px-4 text-right">{t("inventory.products.price", "Selling Price (LKR)")}</th>
+                <th className="py-3 px-4 text-right">{t("inventory.products.stock", "Current Stock")}</th>
+                <th className="py-3 px-4 text-center">{t("common.status", "Status")}</th>
+                {canManage && <th className="py-3 px-4 text-right">{t("common.actions", "Actions")}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={canManage ? 8 : 7} className="py-8 text-center text-slate-500">
-                    No products found.
+                    {t("inventory.products.noProducts", "No products found.")}
                   </td>
                 </tr>
               ) : (
@@ -226,7 +228,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                               : "bg-slate-800 text-slate-500 border border-slate-700"
                           }`}
                         >
-                          {product.isActive ? "ACTIVE" : "ARCHIVED"}
+                          {product.isActive ? t("common.active", "ACTIVE") : t("common.archived", "ARCHIVED")}
                         </span>
                       </td>
                       {canManage && (
@@ -238,7 +240,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                                 setEditingProduct(product);
                               }}
                               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                              title="Edit product"
+                              title={t("common.edit", "Edit")}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
@@ -246,7 +248,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                               <button
                                 onClick={() => handleArchive(product.id)}
                                 className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition-colors"
-                                title="Archive product"
+                                title={t("common.archive", "Archive")}
                               >
                                 <Archive className="w-3.5 h-3.5" />
                               </button>
@@ -276,10 +278,10 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
             <h2 className="text-base font-bold text-white mb-1 flex items-center gap-2">
               <Package className="w-5 h-5 text-emerald-400" />
-              <span>Add New Product</span>
+              <span>{t("inventory.products.modalTitle", "Add New Product")}</span>
             </h2>
             <p className="text-xs text-slate-400 mb-4">
-              Register a tenant-isolated product item. SKU must be unique in this business.
+              {t("inventory.products.modalSubtitle", "Register a tenant-isolated product item. SKU must be unique in this business.")}
             </p>
 
             {errorMsg && (
@@ -292,7 +294,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Product Name *
+                    {t("inventory.products.name", "Product Name *")}
                   </label>
                   <input
                     type="text"
@@ -304,7 +306,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    SKU (Code) *
+                    {t("inventory.products.sku", "SKU (Code) *")}
                   </label>
                   <input
                     type="text"
@@ -319,7 +321,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Category *
+                    {t("inventory.products.category", "Category *")}
                   </label>
                   <select
                     name="category"
@@ -335,7 +337,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Unit of Measure *
+                    {t("inventory.products.unit", "Unit of Measure *")}
                   </label>
                   <select
                     name="unitOfMeasure"
@@ -354,7 +356,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Unit Cost (LKR) *
+                    {t("inventory.products.cost", "Unit Cost (LKR) *")}
                   </label>
                   <input
                     type="number"
@@ -368,7 +370,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Selling Price (LKR) *
+                    {t("inventory.products.price", "Selling Price (LKR) *")}
                   </label>
                   <input
                     type="number"
@@ -385,7 +387,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Reorder Threshold *
+                    {t("inventory.products.reorderLevel", "Reorder Threshold *")}
                   </label>
                   <input
                     type="number"
@@ -399,7 +401,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Initial Stock (Opening)
+                    {t("inventory.products.initialStock", "Initial Stock (Opening)")}
                   </label>
                   <input
                     type="number"
@@ -414,7 +416,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
-                  Barcode / QR (Optional)
+                  {t("inventory.products.barcode", "Barcode / QR (Optional)")}
                 </label>
                 <input
                   type="text"
@@ -426,7 +428,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
-                  Description (Optional)
+                  {t("inventory.products.description", "Description (Optional)")}
                 </label>
                 <textarea
                   name="description"
@@ -442,14 +444,14 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-900/30 disabled:opacity-50"
                 >
-                  {isPending ? "Creating..." : "Save Product"}
+                  {isPending ? t("common.saving", "Creating...") : t("common.save", "Save Product")}
                 </button>
               </div>
             </form>
@@ -470,10 +472,10 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
             <h2 className="text-base font-bold text-white mb-1 flex items-center gap-2">
               <Edit2 className="w-4 h-4 text-emerald-400" />
-              <span>Edit Product Details</span>
+              <span>{t("inventory.products.editModalTitle", "Edit Product Details")}</span>
             </h2>
             <p className="text-xs text-slate-400 mb-4">
-              Editing SKU: <strong className="font-mono text-emerald-400">{editingProduct.sku}</strong>. Stock quantity is strictly managed through auditable stock movements.
+              {t("inventory.products.editingSku", "Editing SKU")}: <strong className="font-mono text-emerald-400">{editingProduct.sku}</strong>.
             </p>
 
             {errorMsg && (
@@ -487,7 +489,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
-                  Product Name *
+                  {t("inventory.products.name", "Product Name *")}
                 </label>
                 <input
                   type="text"
@@ -501,7 +503,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Category *
+                    {t("inventory.products.category", "Category *")}
                   </label>
                   <select
                     name="category"
@@ -518,7 +520,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Unit of Measure *
+                    {t("inventory.products.unit", "Unit of Measure *")}
                   </label>
                   <select
                     name="unitOfMeasure"
@@ -538,7 +540,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Unit Cost (LKR) *
+                    {t("inventory.products.cost", "Unit Cost (LKR) *")}
                   </label>
                   <input
                     type="number"
@@ -552,7 +554,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Selling Price (LKR) *
+                    {t("inventory.products.price", "Selling Price (LKR) *")}
                   </label>
                   <input
                     type="number"
@@ -569,7 +571,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Reorder Threshold *
+                    {t("inventory.products.reorderLevel", "Reorder Threshold *")}
                   </label>
                   <input
                     type="number"
@@ -583,22 +585,22 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                 </div>
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Status
+                    {t("common.status", "Status")}
                   </label>
                   <select
                     name="isActive"
                     defaultValue={editingProduct.isActive ? "true" : "false"}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="true">Active</option>
-                    <option value="false">Archived / Inactive</option>
+                    <option value="true">{t("common.active", "Active")}</option>
+                    <option value="false">{t("common.archived", "Archived / Inactive")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
-                  Barcode / QR (Optional)
+                  {t("inventory.products.barcode", "Barcode / QR (Optional)")}
                 </label>
                 <input
                   type="text"
@@ -610,7 +612,7 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
 
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
-                  Description (Optional)
+                  {t("inventory.products.description", "Description (Optional)")}
                 </label>
                 <textarea
                   name="description"
@@ -626,14 +628,14 @@ export function ProductTable({ products, canManage }: ProductTableProps) {
                   onClick={() => setEditingProduct(null)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-900/30 disabled:opacity-50"
                 >
-                  {isPending ? "Updating..." : "Save Changes"}
+                  {isPending ? t("common.saving", "Updating...") : t("common.save", "Save Changes")}
                 </button>
               </div>
             </form>

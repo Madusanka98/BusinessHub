@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProductionBatchAction } from "@/modules/mushroom/actions/mushroom.actions";
+import { useLanguage } from "@/lib/i18n/language-context";
 import { PlusCircle, X, Loader2 } from "lucide-react";
 
 interface CreateBatchModalProps {
@@ -18,6 +19,7 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]> | null>(null);
   const [selectedStrainId, setSelectedStrainId] = useState<string>(strains[0]?.id || "");
   const router = useRouter();
+  const { t } = useLanguage();
 
   const filteredRecipes = recipes.filter((r) => r.strainId === selectedStrainId);
 
@@ -47,7 +49,7 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
         className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/30 cursor-pointer"
       >
         <PlusCircle className="w-4 h-4" />
-        <span>Initialize Batch</span>
+        <span>{t("mushroom.batches.newBatchBtn", "Initialize Batch")}</span>
       </button>
 
       {isOpen && (
@@ -60,9 +62,11 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-lg font-bold text-white mb-1">Initialize Production Batch</h2>
+            <h2 className="text-lg font-bold text-white mb-1">
+              {t("mushroom.batches.modalTitle", "Initialize Production Batch")}
+            </h2>
             <p className="text-xs text-slate-400 mb-4">
-              Begin a new biological cultivation cycle with controlled bag group tracking.
+              {t("mushroom.batches.modalSubtitle", "Begin a new biological cultivation cycle with controlled bag group tracking.")}
             </p>
 
             {error && (
@@ -75,7 +79,9 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Strain */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Mushroom Strain *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.strain", "Mushroom Strain *")}
+                  </label>
                   <select
                     name="strainId"
                     value={selectedStrainId}
@@ -93,7 +99,9 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
 
                 {/* Substrate Recipe */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Substrate Recipe *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.recipe", "Substrate Recipe *")}
+                  </label>
                   <select
                     name="recipeId"
                     required
@@ -106,7 +114,7 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
                         </option>
                       ))
                     ) : (
-                      <option value="">No recipe for strain</option>
+                      <option value="">{t("mushroom.batches.noRecipe", "No recipe for strain")}</option>
                     )}
                   </select>
                 </div>
@@ -115,7 +123,9 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Initial Bags Count */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Initial Bags Count *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.initialBags", "Initial Bags Count *")}
+                  </label>
                   <input
                     type="number"
                     name="initialBagsCount"
@@ -131,12 +141,14 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
 
                 {/* Fruiting Chamber (Optional) */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Assigned Chamber</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.chamber", "Assigned Chamber")}
+                  </label>
                   <select
                     name="chamberId"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="">None (Assign during fruiting)</option>
+                    <option value="">{t("mushroom.batches.noneChamber", "None (Assign during fruiting)")}</option>
                     {chambers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -149,7 +161,9 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Expected Yield */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Expected Yield (kg)</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.expectedYield", "Expected Yield (kg)")}
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -162,7 +176,9 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
 
                 {/* Allocated Cost */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Allocated Cost (LKR)</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t("mushroom.batches.allocatedCost", "Allocated Cost (LKR)")}
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -177,11 +193,13 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Production Notes</label>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {t("mushroom.batches.notes", "Production Notes")}
+                </label>
                 <textarea
                   name="notes"
                   rows={2}
-                  placeholder="Optional batch preparation notes, grain spawn lot reference, etc."
+                  placeholder={t("mushroom.batches.notesPlaceholder", "Optional batch preparation notes, grain spawn lot reference, etc.")}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -192,7 +210,7 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
                   onClick={() => setIsOpen(false)}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
@@ -200,7 +218,7 @@ export function CreateBatchModal({ strains, recipes, chambers }: CreateBatchModa
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{isPending ? "Initializing..." : "Create Batch"}</span>
+                  <span>{isPending ? t("common.saving", "Initializing...") : t("mushroom.batches.createBtn", "Create Batch")}</span>
                 </button>
               </div>
             </form>
