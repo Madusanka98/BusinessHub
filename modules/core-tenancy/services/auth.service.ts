@@ -111,8 +111,22 @@ export async function requestPasswordReset(emailInput: string): Promise<{ succes
   const tokenHash = hashToken(rawToken);
   const expiresAt = generateTokenExpiry(1); // 1-hour expiration
 
-  // Re-use InvitationToken table with specific reset tracking or dedicated user token
-  // For clarity, we dispatch the reset email
+  // Invalidate any previous pending tokens for this user
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, status: "PENDING" },
+    data: { status: "EXPIRED" },
+  });
+
+  // Persist token hash and 1-hour expiration
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      status: "PENDING",
+    },
+  });
+
   await sendPasswordResetEmail(user.email, rawToken);
 
   await recordAuditEvent({
@@ -126,7 +140,107 @@ export async function requestPasswordReset(emailInput: string): Promise<{ succes
 }
 
 /**
- * Completes a password reset given a verified reset token.
+ * Validates a raw password reset token against the database.
+ */
+export async function verifyPasswordResetToken(rawToken: string): Promise<{
+  valid: boolean;
+  error?: string;
+  userId?: string;
+  email?: string;
+}> {
+  if (!rawToken || typeof rawToken !== "string") {
+    return { valid: false, error: "Invalid reset token provided." };
+  }
+
+  const tokenHash = hashToken(rawToken);
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: {
+      user: {
+        select: { id: true, email: true, isActive: true },
+      },
+    },
+  });
+
+  if (!resetToken) {
+    return { valid: false, error: "Password reset link is invalid or has expired." };
+  }
+
+  if (resetToken.status === "CONSUMED") {
+    return { valid: false, error: "This password reset link has already been used." };
+  }
+
+  if (resetToken.status === "EXPIRED" || resetToken.expiresAt < new Date()) {
+    return { valid: false, error: "This password reset link has expired (links are valid for 1 hour)." };
+  }
+
+  if (!resetToken.user.isActive) {
+    return { valid: false, error: "Your account has been deactivated. Please contact support." };
+  }
+
+  return {
+    valid: true,
+    userId: resetToken.user.id,
+    email: resetToken.user.email,
+  };
+}
+
+/**
+ * Completes a password reset using the cryptographically verified single-use token.
+ */
+export async function completePasswordResetWithToken(
+  rawToken: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  const tokenCheck = await verifyPasswordResetToken(rawToken);
+  if (!tokenCheck.valid || !tokenCheck.userId) {
+    return { success: false, error: tokenCheck.error || "Invalid or expired token." };
+  }
+
+  const strength = validatePasswordStrength(newPassword);
+  if (!strength.isValid) {
+    return { success: false, error: strength.error };
+  }
+
+  const userId = tokenCheck.userId;
+  const passwordHash = await hashPassword(newPassword);
+  const tokenHash = hashToken(rawToken);
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Update user password
+    await tx.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    // 2. Consume token atomically
+    await tx.passwordResetToken.update({
+      where: { tokenHash },
+      data: { status: "CONSUMED" },
+    });
+
+    // 3. Invalidate active database sessions for defense-in-depth
+    await tx.session.deleteMany({
+      where: { userId },
+    });
+
+    // 4. Audit trail
+    await recordAuditEvent(
+      {
+        userId,
+        actionType: "PASSWORD_RESET_COMPLETED",
+        targetEntity: "User",
+        targetId: userId,
+      },
+      tx
+    );
+  });
+
+  return { success: true };
+}
+
+/**
+ * Direct administrative password reset.
  */
 export async function completePasswordReset(
   userId: string,

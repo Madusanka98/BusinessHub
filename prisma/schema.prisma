@@ -36,6 +36,7 @@ model User {
   initiatedBatches    ProductionBatch[]      @relation("BatchInitiator")
   harvestLogs         HarvestLog[]           @relation("HarvestUser")
   notificationPreferences NotificationPreference[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
 }
@@ -199,6 +200,27 @@ enum InvitationStatus {
   CONSUMED
   EXPIRED
   REVOKED
+}
+
+model PasswordResetToken {
+  id         String            @id @default(cuid())
+  userId     String
+  tokenHash  String            @unique
+  status     ResetTokenStatus  @default(PENDING)
+  expiresAt  DateTime
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+enum ResetTokenStatus {
+  PENDING
+  CONSUMED
+  EXPIRED
 }
 
 // ==========================================

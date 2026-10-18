@@ -339,7 +339,7 @@ describe("Task 5: Finance & Profit-Sharing Module", () => {
     });
 
     it("records amortized repayment and updates outstanding balance", async () => {
-      const { repayment, loan } = await recordLoanRepayment(
+      const { repayment, loan, financialTransactionId } = await recordLoanRepayment(
         businessId,
         {
           loanId,
@@ -356,6 +356,17 @@ describe("Task 5: Finance & Profit-Sharing Module", () => {
       expect(Number(repayment.amount.toString())).toBe(5150.0);
       expect(Number(loan.outstandingBalance.toString())).toBe(10000.0);
       expect(loan.status).toBe("ACTIVE");
+
+      // Verify financial transaction created for interest expense
+      expect(financialTransactionId).toBeTruthy();
+      const finTx = await prisma.financialTransaction.findUnique({
+        where: { id: financialTransactionId! },
+        include: { category: true },
+      });
+      expect(finTx).toBeTruthy();
+      expect(finTx?.type).toBe(TransactionType.EXPENSE);
+      expect(finTx?.category.name).toBe("Loan Interest Expense");
+      expect(Number(finTx?.amount)).toBe(150.0);
     });
   });
 

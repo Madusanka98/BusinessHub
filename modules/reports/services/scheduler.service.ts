@@ -293,7 +293,10 @@ export async function generateReportCsvContent(
  * Idempotently executes a single scheduled report.
  * Uses atomic status locking to prevent duplicate concurrent runs.
  */
-export async function executeScheduledReport(reportId: string) {
+export async function executeScheduledReport(
+  reportId: string,
+  options?: { force?: boolean }
+) {
   const startTime = Date.now();
 
   const report = await prisma.scheduledReport.findUnique({
@@ -305,13 +308,39 @@ export async function executeScheduledReport(reportId: string) {
     return { success: false, reason: "Report not found or paused" };
   }
 
-  // Create run record in IN_PROGRESS state
-  const run = await prisma.scheduledReportRun.create({
-    data: {
-      scheduledReportId: report.id,
-      status: JobRunStatus.IN_PROGRESS,
-    },
+  // Atomic concurrency guard: prevent concurrent runners from executing the same report
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+  const lockResult = await prisma.$transaction(async (tx) => {
+    if (!options?.force) {
+      const activeRun = await tx.scheduledReportRun.findFirst({
+        where: {
+          scheduledReportId: report.id,
+          status: JobRunStatus.IN_PROGRESS,
+          startedAt: { gte: fiveMinutesAgo },
+        },
+      });
+
+      if (activeRun) {
+        return { locked: true, run: null };
+      }
+    }
+
+    const run = await tx.scheduledReportRun.create({
+      data: {
+        scheduledReportId: report.id,
+        status: JobRunStatus.IN_PROGRESS,
+      },
+    });
+
+    return { locked: false, run };
   });
+
+  if (lockResult.locked || !lockResult.run) {
+    return { success: false, reason: "Report is already executing in another concurrent process" };
+  }
+
+  const run = lockResult.run;
 
   try {
     const recipients = (Array.isArray(report.recipients) ? report.recipients : []) as string[];

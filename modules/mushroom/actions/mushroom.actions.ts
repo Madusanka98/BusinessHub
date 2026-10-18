@@ -227,6 +227,8 @@ export async function createProductionBatchAction(
 
     revalidatePath("/mushroom");
     revalidatePath("/mushroom/batches");
+    revalidatePath("/inventory");
+    revalidatePath("/inventory/movements");
 
     return {
       success: true,

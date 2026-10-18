@@ -46,6 +46,34 @@ async function getOrCreateSalesIncomeCategory(
 }
 
 /**
+ * Finds or creates an expense category for customer returns and refunds.
+ */
+async function getOrCreateSalesRefundExpenseCategory(
+  businessId: string,
+  tx: Prisma.TransactionClient
+): Promise<string> {
+  const existing = await tx.transactionCategory.findFirst({
+    where: {
+      businessId,
+      name: "Sales Returns & Refunds",
+      type: TransactionType.EXPENSE,
+    },
+  });
+
+  if (existing) return existing.id;
+
+  const created = await tx.transactionCategory.create({
+    data: {
+      businessId,
+      name: "Sales Returns & Refunds",
+      type: TransactionType.EXPENSE,
+    },
+  });
+
+  return created.id;
+}
+
+/**
  * Generates an incremented sales order document number (e.g., SO-0001, SO-0002).
  */
 async function generateOrderNumber(
@@ -350,6 +378,8 @@ export async function recordCustomerReturn(
       throw new Error("Returns can only be executed against posted/confirmed orders.");
     }
 
+    let totalRefundAmount = new Prisma.Decimal(0);
+
     for (const item of input.items) {
       const originalItem = order.items.find((i) => i.productId === item.productId);
       if (!originalItem) {
@@ -369,6 +399,32 @@ export async function recordCustomerReturn(
         },
         tx
       );
+
+      const unitPrice = item.unitAmount !== undefined ? new Prisma.Decimal(item.unitAmount) : originalItem.unitPrice;
+      const lineRefund = unitPrice.mul(item.quantity);
+      totalRefundAmount = totalRefundAmount.plus(lineRefund);
+    }
+
+    let refundTxId: string | null = null;
+    if (totalRefundAmount.greaterThan(0)) {
+      const refundCategoryId = await getOrCreateSalesRefundExpenseCategory(businessId, tx);
+      const customerLabel = order.isWalkIn ? order.walkInName || "Walk-in Customer" : order.customer?.name || "Customer";
+
+      const refundTx = await tx.financialTransaction.create({
+        data: {
+          businessId,
+          categoryId: refundCategoryId,
+          orderId: order.id,
+          type: TransactionType.EXPENSE,
+          amount: totalRefundAmount,
+          paymentMethod: PaymentMethod.CASH,
+          description: `Customer Refund: ${order.orderNumber} - ${customerLabel} (${input.reason})`,
+          approvalStatus: ApprovalStatus.ACTIVE,
+          transactionDate: new Date(),
+          createdById: userId || (await tx.user.findFirstOrThrow({ where: { isActive: true } })).id,
+        },
+      });
+      refundTxId = refundTx.id;
     }
 
     await recordAuditEvent(
@@ -382,12 +438,19 @@ export async function recordCustomerReturn(
           orderNumber: order.orderNumber,
           reason: input.reason,
           itemCount: input.items.length,
+          refundAmount: totalRefundAmount.toString(),
+          financialTransactionId: refundTxId,
         },
       },
       tx
     );
 
-    return { success: true, orderId: order.id };
+    return {
+      success: true,
+      orderId: order.id,
+      refundAmount: totalRefundAmount.toNumber(),
+      financialTransactionId: refundTxId,
+    };
   });
 }
 

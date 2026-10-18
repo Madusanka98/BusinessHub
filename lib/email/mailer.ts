@@ -1,29 +1,96 @@
 import "server-only";
+import nodemailer, { type Transporter } from "nodemailer";
+
+export interface MailAttachment {
+  filename: string;
+  content: string | Buffer;
+  contentType?: string;
+}
 
 export interface MailOptions {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: MailAttachment[];
+}
+
+let cachedTransporter: Transporter | null = null;
+
+/**
+ * Returns a configured nodemailer SMTP transporter if credentials exist.
+ */
+export function getEmailTransporter(): Transporter | null {
+  if (cachedTransporter) return cachedTransporter;
+
+  const host = process.env.EMAIL_SERVER_HOST;
+  const port = Number(process.env.EMAIL_SERVER_PORT) || 587;
+  const user = process.env.EMAIL_SERVER_USER;
+  const pass = process.env.EMAIL_SERVER_PASSWORD;
+
+  if (!host || !user || !pass) {
+    return null;
+  }
+
+  const isSecure = port === 465;
+
+  cachedTransporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: isSecure,
+    auth: {
+      user,
+      pass,
+    },
+    tls: {
+      rejectUnauthorized: process.env.NODE_ENV === "production",
+    },
+  });
+
+  return cachedTransporter;
 }
 
 /**
  * Dispatches an email notification.
- * In development, safely logs the action and link to the console for testing.
- * In production, dispatches via configured SMTP transporter.
+ * In development without SMTP credentials, safely logs the action and link to the console for testing.
+ * In production or when SMTP is configured, dispatches via nodemailer transporter.
  */
-export async function sendEmail(options: MailOptions): Promise<{ success: boolean; messageId?: string }> {
-  const isDevelopment = process.env.NODE_ENV !== "production";
+export async function sendEmail(
+  options: MailOptions
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const transporter = getEmailTransporter();
 
-  if (isDevelopment || !process.env.EMAIL_SERVER_HOST) {
+  if (!transporter) {
     // Safe development logging - never output passwords or raw sensitive payloads
     console.log(`[DEV EMAIL SENDER] To: ${options.to} | Subject: ${options.subject}`);
     console.log(`[DEV EMAIL SENDER Content Preview]:\n${options.text}\n`);
     return { success: true, messageId: `dev-mock-${Date.now()}` };
   }
 
-  // Production SMTP transport will be initialized here using verified environment credentials
-  return { success: true, messageId: `prod-smtp-${Date.now()}` };
+  try {
+    const from = process.env.EMAIL_FROM || "BusinessHub SaaS <noreply@businesshub.local>";
+    const info = await transporter.sendMail({
+      from,
+      to: options.to,
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+      attachments: options.attachments?.map((att) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : "Failed to dispatch email via SMTP transporter";
+    console.error(`[SMTP ERROR] Failed to send email to ${options.to}:`, errorMsg);
+    if (process.env.NODE_ENV !== "production") {
+      return { success: false, error: errorMsg };
+    }
+    throw new Error(`Email dispatch failed: ${errorMsg}`);
+  }
 }
 
 /**

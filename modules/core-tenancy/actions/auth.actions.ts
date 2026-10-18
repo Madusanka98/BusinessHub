@@ -1,7 +1,7 @@
 "use server";
 
-import { loginSchema, forgotPasswordSchema, acceptInvitationSchema, inviteMemberSchema } from "../schemas/auth.schema";
-import { loginUser, logoutUser, requestPasswordReset } from "../services/auth.service";
+import { loginSchema, forgotPasswordSchema, acceptInvitationSchema, inviteMemberSchema, resetPasswordSchema } from "../schemas/auth.schema";
+import { loginUser, logoutUser, requestPasswordReset, completePasswordResetWithToken } from "../services/auth.service";
 import { acceptInvitation, createInvitation } from "../services/invitation.service";
 import { switchActiveTenant } from "../services/tenant.service";
 import { getTenantContext } from "@/lib/tenant/context";
@@ -67,6 +67,35 @@ export async function requestPasswordResetAction(
 
   const result = await requestPasswordReset(parsed.data.email);
   return { success: true, message: result.message };
+}
+
+export async function resetPasswordAction(
+  _prevState: FormActionState,
+  formData: FormData
+): Promise<FormActionState> {
+  const rawData = {
+    token: formData.get("token"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  };
+
+  const parsed = resetPasswordSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message || "Validation failed." };
+  }
+
+  // Rate-limiting check: max 5 reset attempts per 15 minutes per token
+  const rl = checkRateLimit(`auth:do-reset:${parsed.data.token.slice(0, 16)}`, { limit: 5, windowMs: 15 * 60 * 1000 });
+  if (!rl.success) {
+    return { error: "Too many attempts. Please try again later." };
+  }
+
+  const result = await completePasswordResetWithToken(parsed.data.token, parsed.data.password);
+  if (!result.success) {
+    return { error: result.error || "Failed to reset password." };
+  }
+
+  return { success: true, message: "Your password has been reset successfully. You can now sign in." };
 }
 
 export async function acceptInvitationAction(

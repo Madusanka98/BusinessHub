@@ -1,8 +1,46 @@
 import "server-only";
 import { prisma } from "@/lib/db/prisma";
-import { Prisma, LoanStatus } from "@prisma/client";
+import {
+  Prisma,
+  LoanStatus,
+  LoanDirection,
+  TransactionType,
+  PaymentMethod,
+  ApprovalStatus,
+} from "@prisma/client";
 import { recordAuditEvent } from "@/modules/audit/services/audit.service";
 import { CreatePartnerLoanInput, CreateLoanRepaymentInput } from "../schemas/finance.schema";
+
+/**
+ * Finds or creates a transaction category for loan interest accounting.
+ */
+async function getOrCreateLoanInterestCategory(
+  businessId: string,
+  type: TransactionType,
+  tx: Prisma.TransactionClient
+): Promise<string> {
+  const categoryName = type === TransactionType.EXPENSE ? "Loan Interest Expense" : "Loan Interest Income";
+
+  const existing = await tx.transactionCategory.findFirst({
+    where: {
+      businessId,
+      name: categoryName,
+      type,
+    },
+  });
+
+  if (existing) return existing.id;
+
+  const created = await tx.transactionCategory.create({
+    data: {
+      businessId,
+      name: categoryName,
+      type,
+    },
+  });
+
+  return created.id;
+}
 
 /**
  * Creates a new partner or business loan record.
@@ -127,7 +165,33 @@ export async function recordLoanRepayment(
       },
     });
 
-    // 6. Record audit log
+    // 6. Post FinancialTransaction for interest (EXPENSE if paying partner, INCOME if receiving from partner)
+    let financialTxId: string | null = null;
+    if (interestPayDecimal.greaterThan(0)) {
+      const isPartnerToBusiness = loan.loanDirection === LoanDirection.PARTNER_TO_BUSINESS;
+      const txType = isPartnerToBusiness ? TransactionType.EXPENSE : TransactionType.INCOME;
+      const partnerName = loan.membership.user.fullName || loan.membership.user.email;
+      const interestCategoryId = await getOrCreateLoanInterestCategory(businessId, txType, tx);
+
+      const finTx = await tx.financialTransaction.create({
+        data: {
+          businessId,
+          categoryId: interestCategoryId,
+          type: txType,
+          amount: interestPayDecimal,
+          paymentMethod: PaymentMethod.CASH,
+          description: isPartnerToBusiness
+            ? `Loan interest payment to partner (${partnerName})`
+            : `Loan interest received from partner (${partnerName})`,
+          approvalStatus: ApprovalStatus.ACTIVE,
+          transactionDate: new Date(input.paymentDate),
+          createdById: actorUserId,
+        },
+      });
+      financialTxId = finTx.id;
+    }
+
+    // 7. Record audit log
     await recordAuditEvent(
       {
         businessId,
@@ -142,6 +206,7 @@ export async function recordLoanRepayment(
           interestPaid: interestPayDecimal.toString(),
           remainingBalance: newOutstanding.toString(),
           status: newStatus,
+          financialTransactionId: financialTxId,
         },
       },
       tx
@@ -150,6 +215,7 @@ export async function recordLoanRepayment(
     return {
       repayment,
       loan: updatedLoan,
+      financialTransactionId: financialTxId,
     };
   });
 }

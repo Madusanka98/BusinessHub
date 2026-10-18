@@ -17,7 +17,8 @@ export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get("bh_session")?.value;
   const isPublicPath =
     PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`)) ||
-    pathname.startsWith("/invite/");
+    pathname.startsWith("/invite/") ||
+    pathname.startsWith("/reset-password/");
 
   // 2. Redirect unauthenticated users attempting to access protected routes
   if (!isPublicPath && !sessionToken) {

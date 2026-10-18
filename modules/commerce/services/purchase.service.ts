@@ -47,6 +47,34 @@ async function getOrCreatePurchaseExpenseCategory(
 }
 
 /**
+ * Finds or creates an income category for supplier returns and credits.
+ */
+async function getOrCreatePurchaseReturnIncomeCategory(
+  businessId: string,
+  tx: Prisma.TransactionClient
+): Promise<string> {
+  const existing = await tx.transactionCategory.findFirst({
+    where: {
+      businessId,
+      name: "Purchase Returns & Credits",
+      type: TransactionType.INCOME,
+    },
+  });
+
+  if (existing) return existing.id;
+
+  const created = await tx.transactionCategory.create({
+    data: {
+      businessId,
+      name: "Purchase Returns & Credits",
+      type: TransactionType.INCOME,
+    },
+  });
+
+  return created.id;
+}
+
+/**
  * Generates an incremented purchase document number (e.g., PO-0001, PO-0002).
  */
 async function generatePurchaseNumber(
@@ -373,6 +401,8 @@ export async function recordSupplierReturn(
       throw new Error("Returns can only be executed against POSTED purchases.");
     }
 
+    let totalCreditAmount = new Prisma.Decimal(0);
+
     for (const item of input.items) {
       // Validate that product was in the original purchase
       const originalItem = purchase.items.find((i) => i.productId === item.productId);
@@ -393,6 +423,32 @@ export async function recordSupplierReturn(
         },
         tx
       );
+
+      const unitCost = item.unitAmount !== undefined ? new Prisma.Decimal(item.unitAmount) : originalItem.unitCost;
+      const lineCredit = unitCost.mul(item.quantity);
+      totalCreditAmount = totalCreditAmount.plus(lineCredit);
+    }
+
+    let creditTxId: string | null = null;
+    if (totalCreditAmount.greaterThan(0)) {
+      const creditCategoryId = await getOrCreatePurchaseReturnIncomeCategory(businessId, tx);
+      const supplierLabel = purchase.supplier?.name || "Supplier";
+
+      const creditTx = await tx.financialTransaction.create({
+        data: {
+          businessId,
+          categoryId: creditCategoryId,
+          purchaseId: purchase.id,
+          type: TransactionType.INCOME,
+          amount: totalCreditAmount,
+          paymentMethod: PaymentMethod.CASH,
+          description: `Supplier Credit: ${purchase.purchaseNumber} - ${supplierLabel} (${input.reason})`,
+          approvalStatus: ApprovalStatus.ACTIVE,
+          transactionDate: new Date(),
+          createdById: userId || (await tx.user.findFirstOrThrow({ where: { isActive: true } })).id,
+        },
+      });
+      creditTxId = creditTx.id;
     }
 
     await recordAuditEvent(
@@ -406,12 +462,19 @@ export async function recordSupplierReturn(
           purchaseNumber: purchase.purchaseNumber,
           reason: input.reason,
           itemCount: input.items.length,
+          creditAmount: totalCreditAmount.toString(),
+          financialTransactionId: creditTxId,
         },
       },
       tx
     );
 
-    return { success: true, purchaseId: purchase.id };
+    return {
+      success: true,
+      purchaseId: purchase.id,
+      creditAmount: totalCreditAmount.toNumber(),
+      financialTransactionId: creditTxId,
+    };
   });
 }
 

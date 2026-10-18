@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import { GET as cronGet } from "@/app/api/cron/reports/route";
 import { createBusinessBySuperAdmin } from "@/modules/core-tenancy/services/business.service";
 import {
   sanitizeCsvCell,
@@ -41,6 +43,7 @@ import {
   ApprovalStatus,
   PaymentMethod,
   OrderStatus,
+  PaymentStatus,
   ProductCategory,
   UnitOfMeasure,
 } from "@prisma/client";
@@ -301,6 +304,25 @@ describe("Task 8: Reports, Notifications & SaaS Administration", () => {
       expect(updated?.runs.length).toBeGreaterThan(0);
       expect(updated?.runs[0].status).toBe("SUCCESS");
     });
+
+    it("prevents duplicate concurrent execution of the same scheduled report using atomic locking", async () => {
+      // Simulate an in-flight execution by creating an IN_PROGRESS run
+      const inFlightRun = await prisma.scheduledReportRun.create({
+        data: {
+          scheduledReportId: reportId,
+          status: "IN_PROGRESS",
+          startedAt: new Date(),
+        },
+      });
+
+      // Calling executeScheduledReport concurrently should be rejected by the atomic lock
+      const concurrentResult = await executeScheduledReport(reportId);
+      expect(concurrentResult.success).toBe(false);
+      expect(concurrentResult.reason).toMatch(/already executing/i);
+
+      // Clean up the simulated lock run
+      await prisma.scheduledReportRun.delete({ where: { id: inFlightRun.id } });
+    });
   });
 
   // ==========================================
@@ -315,6 +337,57 @@ describe("Task 8: Reports, Notifications & SaaS Administration", () => {
       expect(pnl.summary.grossProfit).toBe(250000);
       expect(pnl.summary.netIncome).toBe(250000);
       expect(pnl.summary.operatingMarginPercent).toBe(100);
+    });
+
+    it("calculates accurate realized COGS and gross profit from confirmed sales orders", async () => {
+      // Create a test product with unitCost = 500
+      const prod = await prisma.product.create({
+        data: {
+          businessId,
+          name: "Organic Shiitake Test",
+          sku: `TEST-COG-${Date.now()}`,
+          category: ProductCategory.FRESH_MUSHROOM,
+          unitOfMeasure: UnitOfMeasure.KG,
+          unitCost: 500.0,
+          sellingPrice: 1200.0,
+          currentStock: 50.0,
+        },
+      });
+
+      // Create a confirmed order with 10 units
+      const order = await prisma.order.create({
+        data: {
+          businessId,
+          orderNumber: `SO-COG-${Date.now()}`,
+          orderDate: new Date(),
+          status: OrderStatus.CONFIRMED,
+          paymentStatus: PaymentStatus.PAID,
+          totalAmount: 12000.0,
+          isWalkIn: true,
+          items: {
+            create: [
+              {
+                productId: prod.id,
+                quantity: 10.0,
+                unitPrice: 1200.0,
+                subtotal: 12000.0,
+              },
+            ],
+          },
+        },
+      });
+
+      const pnl = await getProfitAndLossReport(businessId);
+      // Realized COGS: 10 units * 500 cost = 5,000
+      expect(pnl.summary.realizedSalesCOGS).toBe(5000);
+      expect(pnl.summary.totalCostOfGoodsSold).toBe(5000);
+      // Gross Profit: Total Revenue (250,000) - Realized COGS (5,000) = 245,000
+      expect(pnl.summary.grossProfit).toBe(245000);
+
+      // Clean up test order & product
+      await prisma.orderItem.deleteMany({ where: { orderId: order.id } });
+      await prisma.order.delete({ where: { id: order.id } });
+      await prisma.product.delete({ where: { id: prod.id } });
     });
 
     it("should calculate inventory valuation and identify low-stock items correctly", async () => {
@@ -446,6 +519,53 @@ describe("Task 8: Reports, Notifications & SaaS Administration", () => {
 
       const secondaryInv = await getInventoryValuationReport(secondaryBusinessId);
       expect(secondaryInv.totalProducts).toBe(0); // Primary org's product does NOT bleed over!
+    });
+  });
+
+  // ==========================================
+  // 8. CRON AUTHENTICATION SECURITY
+  // ==========================================
+  describe("Cron Authentication Security", () => {
+    const originalCronSecret = process.env.CRON_SECRET;
+
+    beforeAll(() => {
+      process.env.CRON_SECRET = "super-secure-cron-secret-12345";
+    });
+
+    afterAll(() => {
+      process.env.CRON_SECRET = originalCronSecret;
+    });
+
+    it("rejects authentication via query parameter ?key= (prevents log leakage)", async () => {
+      const req = new NextRequest("http://localhost:3000/api/cron/reports?key=super-secure-cron-secret-12345");
+      const res = await cronGet(req);
+      expect(res.status).toBe(401);
+      const json = await res.json();
+      expect(json.error).toMatch(/Invalid or missing cron secret/i);
+    });
+
+    it("accepts authentication via Authorization Bearer header", async () => {
+      const req = new NextRequest("http://localhost:3000/api/cron/reports", {
+        headers: {
+          authorization: "Bearer super-secure-cron-secret-12345",
+        },
+      });
+      const res = await cronGet(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+    });
+
+    it("accepts authentication via x-cron-secret header", async () => {
+      const req = new NextRequest("http://localhost:3000/api/cron/reports", {
+        headers: {
+          "x-cron-secret": "super-secure-cron-secret-12345",
+        },
+      });
+      const res = await cronGet(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
     });
   });
 });

@@ -8,7 +8,6 @@ import { processAllDueReports } from "@/modules/reports/services/scheduler.servi
 async function handleCron(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecretHeader = req.headers.get("x-cron-secret");
-  const querySecret = req.nextUrl.searchParams.get("key");
   const secret = process.env.CRON_SECRET;
 
   if (!secret) {
@@ -20,7 +19,7 @@ async function handleCron(req: NextRequest) {
 
   const token = authHeader?.startsWith("Bearer ")
     ? authHeader.substring(7)
-    : cronSecretHeader || querySecret;
+    : cronSecretHeader;
 
   if (!token || token !== secret) {
     return NextResponse.json(

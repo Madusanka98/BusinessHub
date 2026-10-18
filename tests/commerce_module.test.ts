@@ -518,6 +518,17 @@ describe("Task 6: Commerce, Inventory, Purchasing & Sales Module", () => {
       );
 
       expect(returnResult.success).toBe(true);
+      expect(returnResult.creditAmount).toBe(120);
+      expect(returnResult.financialTransactionId).toBeTruthy();
+
+      const finTx = await prisma.financialTransaction.findUnique({
+        where: { id: returnResult.financialTransactionId! },
+        include: { category: true },
+      });
+      expect(finTx).toBeTruthy();
+      expect(finTx?.type).toBe(TransactionType.INCOME);
+      expect(finTx?.category.name).toBe("Purchase Returns & Credits");
+      expect(Number(finTx?.amount)).toBe(120);
 
       // Stock should decrease by 10: 150 - 10 = 140
       const product = await prisma.product.findUniqueOrThrow({
@@ -709,6 +720,17 @@ describe("Task 6: Commerce, Inventory, Purchasing & Sales Module", () => {
       );
 
       expect(returnResult.success).toBe(true);
+      expect(returnResult.refundAmount).toBe(400);
+      expect(returnResult.financialTransactionId).toBeTruthy();
+
+      const finTx = await prisma.financialTransaction.findUnique({
+        where: { id: returnResult.financialTransactionId! },
+        include: { category: true },
+      });
+      expect(finTx).toBeTruthy();
+      expect(finTx?.type).toBe(TransactionType.EXPENSE);
+      expect(finTx?.category.name).toBe("Sales Returns & Refunds");
+      expect(Number(finTx?.amount)).toBe(400);
 
       // Stock replenished: 18 + 2 = 20
       const product = await prisma.product.findUniqueOrThrow({

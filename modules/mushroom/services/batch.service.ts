@@ -1,7 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db/prisma";
-import { BatchPhase, BatchStatus, Prisma } from "@prisma/client";
+import { BatchPhase, BatchStatus, Prisma, StockMovementType } from "@prisma/client";
 import { recordAuditEvent } from "@/modules/audit/services/audit.service";
+import { recordStockMovement } from "@/modules/commerce/services/stock.service";
 import {
   AdvanceBatchPhaseInput,
   AdvanceBatchPhaseSchema,
@@ -216,6 +217,26 @@ export async function createProductionBatch(
         loggedById: userId,
       },
     });
+
+    // Atomically consume raw material substrate ingredients from inventory
+    for (const ing of recipe.ingredients) {
+      const qtyPerBag = Number(ing.quantityPerBag);
+      const totalIngredientDeduction = Number((qtyPerBag * input.initialBagsCount).toFixed(3));
+      if (totalIngredientDeduction > 0) {
+        await recordStockMovement(
+          {
+            businessId,
+            productId: ing.rawMaterialProductId,
+            type: StockMovementType.PRODUCTION_CONSUMPTION,
+            quantity: -Math.abs(totalIngredientDeduction),
+            referenceId: created.id,
+            notes: `Substrate consumption for batch ${batchCode} (${input.initialBagsCount} bags @ ${qtyPerBag}/bag)`,
+            createdById: userId,
+          },
+          tx
+        );
+      }
+    }
 
     return created;
   });

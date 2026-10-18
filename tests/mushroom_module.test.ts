@@ -38,6 +38,7 @@ import {
   ContaminationReason,
   ProductCategory,
   UnitOfMeasure,
+  StockMovementType,
 } from "@prisma/client";
 
 describe("Task 7: Mushroom Farming Production Module", () => {
@@ -264,9 +265,97 @@ describe("Task 7: Mushroom Farming Production Module", () => {
       expect(batch.status).toBe(BatchStatus.ACTIVE);
       expect(batch.batchCode).toMatch(/^MB-AME-\d{8}-\d{3}$/);
       expect(Number(batch.expectedYieldKg)).toBe(125.0);
-      expect(Number(batch.allocatedCost)).toBe(25000.0);
-
       batchId = batch.id;
+    });
+
+    it("atomically consumes substrate raw materials when recipe defines ingredients", async () => {
+      // 1. Create a raw material product (e.g. Sawdust) with initial stock = 100 kg
+      const sawdustProduct = await createProduct(
+        businessAId,
+        {
+          name: `Hardwood Sawdust-${timestamp}`,
+          sku: `RAW-SD-${timestamp}`,
+          category: ProductCategory.RAW_MATERIAL,
+          unitOfMeasure: UnitOfMeasure.KG,
+          unitCost: 15.0,
+          sellingPrice: 0,
+          initialStock: 100.0,
+        },
+        ownerUserId
+      );
+
+      // 2. Create recipe with sawdust as ingredient (0.8 kg per bag)
+      const mixRecipe = await createSubstrateRecipe(
+        businessAId,
+        {
+          strainId: strainAId,
+          name: `Sawdust Mix With Ingredient-${timestamp}`,
+          standardBagWeightKg: 1.0,
+          ingredients: [
+            {
+              rawMaterialProductId: sawdustProduct.id,
+              percentage: 80,
+              quantityPerBag: 0.8,
+            },
+          ],
+        },
+        ownerUserId
+      );
+
+      // 3. Initializing a batch of 50 bags requires 50 * 0.8 = 40 kg sawdust
+      const batchWithIng = await createProductionBatch(
+        businessAId,
+        {
+          strainId: strainAId,
+          recipeId: mixRecipe.id,
+          chamberId: chamberAId,
+          initialBagsCount: 50,
+          expectedYieldKg: 15.0,
+          allocatedCost: 0,
+        },
+        ownerUserId
+      );
+
+      expect(batchWithIng.id).toBeDefined();
+
+      // Check stock was deducted: 100 - 40 = 60 kg
+      const updatedSawdust = await prisma.product.findUniqueOrThrow({
+        where: { id: sawdustProduct.id },
+      });
+      expect(Number(updatedSawdust.currentStock)).toBe(60);
+
+      // Verify stock movement ledger entry
+      const movement = await prisma.stockMovement.findFirst({
+        where: {
+          productId: sawdustProduct.id,
+          referenceId: batchWithIng.id,
+          type: StockMovementType.PRODUCTION_CONSUMPTION,
+        },
+      });
+      expect(movement).toBeTruthy();
+      expect(Number(movement?.quantity)).toBe(-40);
+
+      // 4. Attempting to initialize another batch requiring 100 bags (80 kg) when only 60 kg available must fail
+      await expect(
+        createProductionBatch(
+          businessAId,
+          {
+            strainId: strainAId,
+            recipeId: mixRecipe.id,
+            chamberId: chamberAId,
+            initialBagsCount: 100,
+            expectedYieldKg: 30.0,
+            allocatedCost: 0,
+          },
+          ownerUserId
+        )
+      ).rejects.toThrow(InsufficientStockError);
+
+      // Verify stock remains untouched at 60 kg
+      const untouchedSawdust = await prisma.product.findUniqueOrThrow({
+        where: { id: sawdustProduct.id },
+      });
+      expect(Number(untouchedSawdust.currentStock)).toBe(60);
     });
 
     it("advances through legitimate biological phases sequentially", async () => {

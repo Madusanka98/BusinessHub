@@ -469,6 +469,7 @@ export async function recordSupplierReturnAction(
     revalidatePath("/inventory/products");
     revalidatePath("/inventory/movements");
     revalidatePath("/inventory/purchases");
+    revalidatePath("/finance/transactions");
     return { success: true, message: "Supplier return processed and stock adjusted." };
   } catch (err: unknown) {
     return {
@@ -591,6 +592,7 @@ export async function recordCustomerReturnAction(
     revalidatePath("/inventory/products");
     revalidatePath("/inventory/movements");
     revalidatePath("/inventory/sales");
+    revalidatePath("/finance/transactions");
     return { success: true, message: "Customer return processed and stock replenished." };
   } catch (err: unknown) {
     return {

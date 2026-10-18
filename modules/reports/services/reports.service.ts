@@ -58,9 +58,40 @@ export async function getProfitAndLossReport(
     orderBy: { transactionDate: "asc" },
   });
 
+  // Calculate Realized COGS from Confirmed/Delivered Sales Orders in the date range
+  const orderDateWhere: Prisma.DateTimeFilter = {};
+  if (startDate) orderDateWhere.gte = startDate;
+  if (endDate) orderDateWhere.lte = endDate;
+
+  const orders = await prisma.order.findMany({
+    where: {
+      businessId,
+      status: { in: [OrderStatus.CONFIRMED, OrderStatus.DELIVERED] },
+      ...(Object.keys(orderDateWhere).length > 0 ? { orderDate: orderDateWhere } : {}),
+    },
+    include: {
+      items: {
+        include: {
+          product: {
+            select: { unitCost: true },
+          },
+        },
+      },
+    },
+  });
+
+  let realizedSalesCOGS = 0;
+  for (const order of orders) {
+    for (const item of order.items) {
+      const qty = Number(item.quantity);
+      const unitCost = Number(item.product.unitCost);
+      realizedSalesCOGS += qty * unitCost;
+    }
+  }
+
   let totalRevenue = 0;
   let totalOperatingExpenses = 0;
-  let totalCostOfGoodsSold = 0;
+  let directCOGS = 0;
 
   const revenueByCategory: Record<string, number> = {};
   const expensesByCategory: Record<string, number> = {};
@@ -76,19 +107,25 @@ export async function getProfitAndLossReport(
       // Check if expense is categorized as raw materials / production COGS
       const isCOGS =
         catName.toLowerCase().includes("cost of goods") ||
+        catName.toLowerCase().includes("cogs") ||
         catName.toLowerCase().includes("raw material") ||
         catName.toLowerCase().includes("spawn") ||
         catName.toLowerCase().includes("substrate") ||
         Boolean(tx.purchaseId);
 
       if (isCOGS) {
-        totalCostOfGoodsSold += amount;
+        directCOGS += amount;
       } else {
         totalOperatingExpenses += amount;
       }
 
       expensesByCategory[catName] = (expensesByCategory[catName] || 0) + amount;
     }
+  }
+
+  const totalCostOfGoodsSold = Number((realizedSalesCOGS + directCOGS).toFixed(2));
+  if (realizedSalesCOGS > 0) {
+    expensesByCategory["Realized Sales COGS"] = Number(realizedSalesCOGS.toFixed(2));
   }
 
   const grossProfit = Number((totalRevenue - totalCostOfGoodsSold).toFixed(2));
@@ -103,7 +140,9 @@ export async function getProfitAndLossReport(
     },
     summary: {
       totalRevenue: Number(totalRevenue.toFixed(2)),
-      totalCostOfGoodsSold: Number(totalCostOfGoodsSold.toFixed(2)),
+      realizedSalesCOGS: Number(realizedSalesCOGS.toFixed(2)),
+      directCOGS: Number(directCOGS.toFixed(2)),
+      totalCostOfGoodsSold,
       grossProfit,
       totalOperatingExpenses: Number(totalOperatingExpenses.toFixed(2)),
       netIncome,

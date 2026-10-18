@@ -238,6 +238,7 @@ export async function recordLoanRepaymentAction(
 
     revalidatePath("/finance");
     revalidatePath("/finance/loans");
+    revalidatePath("/finance/transactions");
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to record loan repayment.";
