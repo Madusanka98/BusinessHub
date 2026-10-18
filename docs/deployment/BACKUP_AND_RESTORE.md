@@ -80,13 +80,13 @@ mysql -u root -p businesshub_restore_test < backup.sql
    SELECT count(*) FROM information_schema.tables WHERE table_schema = 'businesshub_restore_test';
    -- Expect count: 39 tables
    ```
-2. **Financial Balance Verification**: Ensure account balances match journal entries:
+2. **Financial Balance Verification**: Ensure financial transactions reconcile with business ledgers:
    ```sql
-   SELECT b.name, SUM(j.amount) as total_debits
-   FROM JournalEntry j
-   JOIN Business b ON j.businessId = b.id
-   WHERE j.entryType = 'DEBIT'
-   GROUP BY b.id;
+   SELECT b.name, t.type, SUM(t.amount) as total_amount
+   FROM FinancialTransaction t
+   JOIN Business b ON t.businessId = b.id
+   WHERE t.approvalStatus = 'ACTIVE'
+   GROUP BY b.id, t.type;
    ```
 3. **Inventory Quantity Check**: Ensure stock movements reconcile with product stock on hand.
 4. **Prisma Migration Alignment**: Verify the Prisma migration history table is intact:
