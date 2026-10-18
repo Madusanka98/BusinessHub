@@ -4,6 +4,8 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { assertTenantPermission } from "@/lib/tenant/guards";
 import { MushroomNav } from "../mushroom-nav";
 import { getContaminationLogs } from "@/modules/mushroom/services/contamination.service";
+import { getProductionBatches } from "@/modules/mushroom/services/batch.service";
+import { RecordContaminationModal } from "./record-contamination-modal";
 import { AlertTriangle, Layers, Calendar } from "lucide-react";
 
 export default async function MushroomContaminationPage() {
@@ -12,6 +14,9 @@ export default async function MushroomContaminationPage() {
 
   const businessId = context.businessId;
   const logs = await getContaminationLogs(businessId);
+  const activeBatches = await getProductionBatches(businessId, {
+    status: "ACTIVE",
+  });
 
   const totalDiscarded = logs.reduce((acc, curr) => acc + curr.discardedBagsCount, 0);
 
@@ -28,8 +33,19 @@ export default async function MushroomContaminationPage() {
           </p>
         </div>
 
-        <div className="px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
-          Total Discarded: {totalDiscarded.toLocaleString()} bags
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+            Total Discarded: {totalDiscarded.toLocaleString()} bags
+          </div>
+          <RecordContaminationModal
+            activeBatches={activeBatches.map((b) => ({
+              id: b.id,
+              batchCode: b.batchCode,
+              strainName: b.strain.name,
+              currentPhase: b.currentPhase,
+              viableBagsCount: b.viableBagsCount,
+            }))}
+          />
         </div>
       </div>
 

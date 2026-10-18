@@ -1,4 +1,14 @@
-import { PrismaClient, MembershipRole, MembershipStatus, BusinessStatus, TransactionType } from "@prisma/client";
+import {
+  PrismaClient,
+  MembershipRole,
+  MembershipStatus,
+  BusinessStatus,
+  TransactionType,
+  ProductCategory,
+  UnitOfMeasure,
+  BatchPhase,
+  BatchStatus,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -182,7 +192,236 @@ async function main() {
       },
     });
   }
-  console.log(`✓ Seeded ${categories.length} transaction categories.`);
+  // 6. Products & Raw Materials
+  const seedProducts = [
+    {
+      sku: "RAW-SAWDUST-01",
+      name: "Rubber Wood Sawdust",
+      category: ProductCategory.RAW_MATERIAL,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 1000.0,
+      unitCost: 25.0,
+      sellingPrice: 0.0,
+    },
+    {
+      sku: "RAW-RICEBRAN-01",
+      name: "Rice Bran (Fine)",
+      category: ProductCategory.RAW_MATERIAL,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 250.0,
+      unitCost: 60.0,
+      sellingPrice: 0.0,
+    },
+    {
+      sku: "RAW-LIME-01",
+      name: "Agricultural Lime (CaCO3)",
+      category: ProductCategory.RAW_MATERIAL,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 50.0,
+      unitCost: 40.0,
+      sellingPrice: 0.0,
+    },
+    {
+      sku: "RAW-SPAWN-AWO",
+      name: "American Oyster Grain Spawn",
+      category: ProductCategory.RAW_MATERIAL,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 50.0,
+      unitCost: 350.0,
+      sellingPrice: 0.0,
+    },
+    {
+      sku: "MSH-FRESH-AWO",
+      name: "Fresh American Oyster Mushroom",
+      category: ProductCategory.FRESH_MUSHROOM,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 15.0,
+      unitCost: 350.0,
+      sellingPrice: 750.0,
+    },
+    {
+      sku: "MSH-DRIED-AWO",
+      name: "Dried American Oyster Mushrooms (Pack)",
+      category: ProductCategory.DRIED_MUSHROOM,
+      unitOfMeasure: UnitOfMeasure.KG,
+      currentStock: 5.0,
+      unitCost: 3800.0,
+      sellingPrice: 7500.0,
+    },
+  ];
+
+  const productMap: Record<string, string> = {};
+  for (const p of seedProducts) {
+    const prod = await prisma.product.upsert({
+      where: {
+        businessId_sku: {
+          businessId: business.id,
+          sku: p.sku,
+        },
+      },
+      update: {
+        name: p.name,
+        category: p.category,
+        unitOfMeasure: p.unitOfMeasure,
+        currentStock: p.currentStock,
+        unitCost: p.unitCost,
+        sellingPrice: p.sellingPrice,
+        isActive: true,
+      },
+      create: {
+        businessId: business.id,
+        sku: p.sku,
+        name: p.name,
+        category: p.category,
+        unitOfMeasure: p.unitOfMeasure,
+        currentStock: p.currentStock,
+        unitCost: p.unitCost,
+        sellingPrice: p.sellingPrice,
+        isActive: true,
+      },
+    });
+    productMap[p.sku] = prod.id;
+  }
+  console.log(`✓ Seeded ${seedProducts.length} inventory products (including FRESH_MUSHROOM).`);
+
+  // 7. Mushroom Strains, Chambers & Substrate Recipes
+  const strain = await prisma.mushroomStrain.upsert({
+    where: {
+      businessId_name: {
+        businessId: business.id,
+        name: "American White Oyster",
+      },
+    },
+    update: {
+      scientificName: "Pleurotus ostreatus",
+      optimalTempRange: "18-24 C",
+      optimalHumidity: "85-95%",
+      incubationDays: 21,
+      fruitingDays: 7,
+    },
+    create: {
+      businessId: business.id,
+      name: "American White Oyster",
+      scientificName: "Pleurotus ostreatus",
+      optimalTempRange: "18-24 C",
+      optimalHumidity: "85-95%",
+      incubationDays: 21,
+      fruitingDays: 7,
+    },
+  });
+
+  const chamber = await prisma.fruitingChamber.upsert({
+    where: {
+      businessId_name: {
+        businessId: business.id,
+        name: "Chamber 01 - Humidified Tunnel",
+      },
+    },
+    update: {
+      capacityBags: 1200,
+      status: "ACTIVE",
+    },
+    create: {
+      businessId: business.id,
+      name: "Chamber 01 - Humidified Tunnel",
+      capacityBags: 1200,
+      status: "ACTIVE",
+    },
+  });
+
+  const recipe = await prisma.substrateRecipe.upsert({
+    where: {
+      businessId_name: {
+        businessId: business.id,
+        name: "Standard Sawdust Mix 1kg",
+      },
+    },
+    update: {
+      strainId: strain.id,
+      standardBagWeightKg: 1.0,
+      instructions: "80% Sawdust, 18% Rice Bran, 2% Lime. Autoclave 90 min at 121C.",
+    },
+    create: {
+      businessId: business.id,
+      strainId: strain.id,
+      name: "Standard Sawdust Mix 1kg",
+      standardBagWeightKg: 1.0,
+      instructions: "80% Sawdust, 18% Rice Bran, 2% Lime. Autoclave 90 min at 121C.",
+    },
+  });
+
+  // Seed recipe ingredients
+  const recipeIngredients = [
+    { rawSku: "RAW-SAWDUST-01", percentage: 80.0, qtyPerBag: 0.8 },
+    { rawSku: "RAW-RICEBRAN-01", percentage: 18.0, qtyPerBag: 0.18 },
+    { rawSku: "RAW-LIME-01", percentage: 2.0, qtyPerBag: 0.02 },
+  ];
+
+  for (const ing of recipeIngredients) {
+    const rawId = productMap[ing.rawSku];
+    if (rawId) {
+      await prisma.recipeIngredient.upsert({
+        where: {
+          recipeId_rawMaterialProductId: {
+            recipeId: recipe.id,
+            rawMaterialProductId: rawId,
+          },
+        },
+        update: {
+          percentage: ing.percentage,
+          quantityPerBag: ing.qtyPerBag,
+        },
+        create: {
+          recipeId: recipe.id,
+          rawMaterialProductId: rawId,
+          percentage: ing.percentage,
+          quantityPerBag: ing.qtyPerBag,
+        },
+      });
+    }
+  }
+
+  // 8. Active Fruiting Batch (Ready for Harvest Testing)
+  const ownerUser = await prisma.user.findUnique({
+    where: { email: "owner@businesshub.local" },
+  });
+
+  if (ownerUser) {
+    const fruitingBatch = await prisma.productionBatch.upsert({
+      where: {
+        businessId_batchCode: {
+          businessId: business.id,
+          batchCode: "MB-AWO-202610-001",
+        },
+      },
+      update: {
+        strainId: strain.id,
+        recipeId: recipe.id,
+        chamberId: chamber.id,
+        initialBagsCount: 500,
+        viableBagsCount: 485,
+        currentPhase: BatchPhase.FRUITING,
+        status: BatchStatus.ACTIVE,
+        expectedYieldKg: 175.0,
+        allocatedCost: 15000.0,
+      },
+      create: {
+        businessId: business.id,
+        batchCode: "MB-AWO-202610-001",
+        strainId: strain.id,
+        recipeId: recipe.id,
+        chamberId: chamber.id,
+        initialBagsCount: 500,
+        viableBagsCount: 485,
+        currentPhase: BatchPhase.FRUITING,
+        status: BatchStatus.ACTIVE,
+        expectedYieldKg: 175.0,
+        allocatedCost: 15000.0,
+        initiatedById: ownerUser.id,
+      },
+    });
+    console.log(`✓ Seeded Fruiting Batch: ${fruitingBatch.batchCode} in FRUITING phase.`);
+  }
 
   console.log("\n=======================================================");
   console.log("  SEED COMPLETED SUCCESSFULLY!  ");
